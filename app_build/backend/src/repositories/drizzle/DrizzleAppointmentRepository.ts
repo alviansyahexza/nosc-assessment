@@ -1,0 +1,88 @@
+import { eq, and } from 'drizzle-orm';
+import { db } from '../../db';
+import { appointments, appointmentDevices, services, serviceResources } from '../../db/schema';
+import { IAppointmentRepository, CreateAppointmentDTO, ServiceRequirements } from '../interfaces/IAppointmentRepository';
+
+export class ConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ConflictError';
+  }
+}
+
+export class DrizzleAppointmentRepository implements IAppointmentRepository {
+  
+  async getServiceRequirements(tenantId: number, serviceId: number): Promise<ServiceRequirements | null> {
+    const serviceRows = await db.select().from(services)
+      .where(and(eq(services.tenantId, tenantId), eq(services.id, serviceId)))
+      .limit(1);
+
+    if (serviceRows.length === 0) return null;
+    const svc = serviceRows[0];
+
+    // Get mapped resources
+    const resources = await db.select().from(serviceResources)
+      .where(and(eq(serviceResources.tenantId, tenantId), eq(serviceResources.serviceId, serviceId)));
+
+    let requiredRoomId: number | null = null;
+    const requiredDeviceIds: number[] = [];
+
+    for (const res of resources) {
+      if (res.roomId) requiredRoomId = res.roomId;
+      if (res.deviceId) requiredDeviceIds.push(res.deviceId);
+    }
+
+    return {
+      durationMin: svc.durationMin,
+      bufferBeforeMin: svc.bufferBeforeMin || 0,
+      bufferAfterMin: svc.bufferAfterMin || 0,
+      requiredRoomId,
+      requiredDeviceIds
+    };
+  }
+
+  async createBooking(data: CreateAppointmentDTO): Promise<number> {
+    try {
+      return await db.transaction(async (tx) => {
+        // Insert main appointment
+        const [appt] = await tx.insert(appointments).values({
+          tenantId: data.tenantId,
+          doctorId: data.doctorId,
+          patientId: data.patientId,
+          roomId: data.roomId,
+          serviceId: data.serviceId,
+          startsAt: data.startsAt,
+          endsAt: data.endsAt,
+        }).returning({ id: appointments.id });
+
+        // Insert required devices
+        if (data.deviceIds.length > 0) {
+          const deviceInserts = data.deviceIds.map(deviceId => ({
+            appointmentId: appt.id,
+            deviceId,
+            tenantId: data.tenantId,
+            startsAt: data.startsAt,
+            endsAt: data.endsAt,
+          }));
+          await tx.insert(appointmentDevices).values(deviceInserts);
+        }
+
+        return appt.id;
+      });
+    } catch (error: any) {
+      // PostgreSQL Exclude constraint violation code is 23P01
+      if (error.code === '23P01') {
+        throw new ConflictError('The selected time slot overlaps with an existing booking for the requested doctor, room, or device.');
+      }
+      throw error;
+    }
+  }
+
+  async cancelBooking(tenantId: number, appointmentId: number): Promise<boolean> {
+    const result = await db.delete(appointments)
+      .where(and(eq(appointments.tenantId, tenantId), eq(appointments.id, appointmentId)))
+      .returning({ id: appointments.id });
+    
+    return result.length > 0;
+  }
+}
