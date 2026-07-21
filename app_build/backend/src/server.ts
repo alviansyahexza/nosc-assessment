@@ -4,6 +4,8 @@ import pinoHttp from 'pino-http';
 import { randomUUID } from 'crypto';
 import { tenantMiddleware } from './middleware/tenant';
 import appointmentsRouter from './routes/appointments';
+import availabilityRouter from './routes/availability';
+import { setupSwagger } from './docs/swagger';
 import pino from 'pino';
 
 // Initialize core logger
@@ -31,11 +33,16 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Swagger Documentation
+setupSwagger(app);
+
 // Protected API Routes
 app.use('/api/appointments', tenantMiddleware, appointmentsRouter);
+app.use('/api/availability', tenantMiddleware, availabilityRouter);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Unhandled error:', err);
   req.log.error({ err }, 'Unhandled error');
   
   if (err.name === 'ConflictError') {
