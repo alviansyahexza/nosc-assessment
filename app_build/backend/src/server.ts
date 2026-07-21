@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
@@ -49,6 +50,8 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     res.status(409).json({ error: err.message });
   } else if (err.name === 'ValidationError') {
     res.status(400).json({ error: err.message, details: err.details });
+  } else if (err.name === 'NotFoundError') {
+    res.status(404).json({ error: err.message });
   } else {
     res.status(500).json({ error: 'Internal Server Error' });
   }
