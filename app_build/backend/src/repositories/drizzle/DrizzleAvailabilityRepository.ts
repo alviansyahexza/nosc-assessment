@@ -1,5 +1,6 @@
 import { db } from '../../db';
-import { eq, and, inArray, gte, lt, or } from 'drizzle-orm';
+import { and, eq, gte, inArray, lt } from 'drizzle-orm';
+import { NotFoundError } from '../../services/bookingService';
 import {
   services, serviceResources, doctors, rooms,
   workingHours, breaks, appointments, appointmentDevices
@@ -25,7 +26,7 @@ export class DrizzleAvailabilityRepository implements IAvailabilityRepository {
     ]);
 
     if (serviceInfo.length === 0) {
-      throw new Error('Service not found');
+      throw new NotFoundError('Service not found');
     }
     const svc = serviceInfo[0];
     
@@ -79,7 +80,7 @@ export class DrizzleAvailabilityRepository implements IAvailabilityRepository {
 
     const validDoctorIds = validDoctors.map(d => d.id);
     if (validDoctorIds.length === 0) {
-      throw new Error('No valid doctors found for this search criteria');
+      throw new NotFoundError('No valid doctors found for this search criteria');
     }
 
     const allRoomIds = requiredRoomId ? [requiredRoomId] : allRooms.map(r => r.id);

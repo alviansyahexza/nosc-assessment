@@ -8,6 +8,9 @@ const availabilityQuerySchema = z.object({
   from: z.string().datetime({ offset: true }),
   to: z.string().datetime({ offset: true }),
   doctor_ids: z.string().optional().transform(val => val ? val.split(',').map(Number) : undefined),
+}).refine(data => new Date(data.from) < new Date(data.to), {
+  message: "End date (to) must be strictly after start date (from)",
+  path: ["to"],
 });
 
 const repo = new DrizzleAvailabilityRepository();
