@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import { tenantMiddleware } from './middleware/tenant';
 import appointmentsRouter from './routes/appointments';
 import availabilityRouter from './routes/availability';
+import utilitiesRouter from './routes/utilities';
 import { setupSwagger } from './docs/swagger';
 import pino from 'pino';
 
@@ -40,6 +41,7 @@ setupSwagger(app);
 // Protected API Routes
 app.use('/api/appointments', tenantMiddleware, appointmentsRouter);
 app.use('/api/availability', tenantMiddleware, availabilityRouter);
+app.use('/api', tenantMiddleware, utilitiesRouter);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -50,6 +52,8 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     res.status(409).json({ error: err.message });
   } else if (err.name === 'ValidationError') {
     res.status(400).json({ error: err.message, details: err.details });
+  } else if (err.name === 'ZodError') {
+    res.status(400).json({ error: 'Validation Error', details: err.errors || err.issues });
   } else if (err.name === 'NotFoundError') {
     res.status(404).json({ error: err.message });
   } else {
