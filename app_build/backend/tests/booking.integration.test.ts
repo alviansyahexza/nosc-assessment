@@ -67,4 +67,111 @@ describe('Booking API Integration Tests', () => {
       
     expect(response.status).toBe(401);
   });
+
+  describe('Zod Schema Validation (HTTP 400)', () => {
+    it('rejects empty payload', async () => {
+      const response = await request(app)
+        .post('/api/appointments')
+        .set('X-Tenant-Id', '42')
+        .send({});
+      
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('rejects payload with missing required fields', async () => {
+      const response = await request(app)
+        .post('/api/appointments')
+        .set('X-Tenant-Id', '42')
+        .send({
+          // Missing doctorId and patientId
+          roomId: 12,
+          serviceId: 7,
+          requestedStartTime: '2026-10-15T11:00:00.000Z'
+        });
+      
+      expect(response.status).toBe(400);
+    });
+
+    it('rejects payload with invalid date format', async () => {
+      const response = await request(app)
+        .post('/api/appointments')
+        .set('X-Tenant-Id', '42')
+        .send({
+          patientId: 556,
+          doctorId: 101,
+          roomId: 12,
+          serviceId: 7,
+          requestedStartTime: 'invalid-date-string'
+        });
+      
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('Boundary Edge-Cases (Closed-Open Intervals)', () => {
+    it('allows booking immediately after another booking ends', async () => {
+      const payload1 = {
+        patientId: 556,
+        doctorId: 101,
+        roomId: 12,
+        serviceId: 7, // Advanced Ultrasound (duration: 30, bufferBefore: 5, bufferAfter: 10) -> total 45 mins. Blocked: 11:55 to 12:40
+        requestedStartTime: '2026-10-16T12:00:00.000Z'
+      };
+
+      const payload2 = {
+        patientId: 556,
+        doctorId: 101,
+        roomId: 12,
+        serviceId: 7,
+        // For payload2, Blocked Start must be >= 12:40. Since bufferBefore is 5, requestedStartTime must be 12:45.
+        // Blocked will be 12:40 to 13:25.
+        requestedStartTime: '2026-10-16T12:45:00.000Z' 
+      };
+
+      const res1 = await request(app)
+        .post('/api/appointments')
+        .set('X-Tenant-Id', '42')
+        .send(payload1);
+      
+      expect(res1.status).toBe(201);
+
+      const res2 = await request(app)
+        .post('/api/appointments')
+        .set('X-Tenant-Id', '42')
+        .send(payload2);
+      
+      expect(res2.status).toBe(201); // Should not conflict because [11:55, 12:40) and [12:40, 13:25) do not overlap
+    });
+  });
+
+  describe('Multi-Tenant Data Isolation (Security/Boundary Check)', () => {
+    beforeAll(async () => {
+      // Setup a valid service for Tenant 99 so the service check passes, exposing the doctor check flaw
+      await db.execute(sql`INSERT INTO tenants (id, name) VALUES (99, 'Malicious Clinic') ON CONFLICT DO NOTHING;`);
+      await db.execute(sql`INSERT INTO services (id, tenant_id, name, duration_min) VALUES (999, 99, 'Fake Service', 30) ON CONFLICT DO NOTHING;`);
+      await db.execute(sql`INSERT INTO patients (id, tenant_id, name) VALUES (999, 99, 'Fake Patient') ON CONFLICT DO NOTHING;`);
+    });
+
+    it('rejects cross-tenant booking for resources that do not belong to the tenant', async () => {
+      // Doctor 101 and Room 12 belongs to Tenant 42.
+      // Tenant 99 should NOT be able to book them, even if Tenant 99 has a valid service (999) and patient (999).
+      const payload = {
+        patientId: 999,
+        doctorId: 101, // Belongs to 42
+        roomId: 12,    // Belongs to 42
+        serviceId: 999,
+        requestedStartTime: '2026-10-17T14:00:00.000Z'
+      };
+
+      const response = await request(app)
+        .post('/api/appointments')
+        .set('X-Tenant-Id', '99') 
+        .send(payload);
+      
+      // We expect the system to deny this because doctor/room doesn't belong to tenant 99.
+      expect(response.status).not.toBe(201);
+      expect([400, 403, 404]).toContain(response.status); 
+    });
+  });
 });
