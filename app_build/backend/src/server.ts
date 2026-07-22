@@ -45,7 +45,6 @@ app.use('/api', tenantMiddleware, utilitiesRouter);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
   req.log.error({ err }, 'Unhandled error');
   
   if (err.name === 'ConflictError') {
