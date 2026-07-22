@@ -174,4 +174,53 @@ describe('Booking API Integration Tests', () => {
       expect([400, 403, 404]).toContain(response.status); 
     });
   });
-});
+
+  describe('Working Hours and Breaks Validation', () => {
+    beforeAll(async () => {
+      // Masukkan jadwal cuti (Break) untuk Dr. Smith (101) di Klinik 42
+      // Tanggal 16 Okt 2026, dari jam 13:00 s/d 14:00 UTC (15:00 s/d 16:00 Berlin Time +02:00)
+      await db.execute(sql`
+        INSERT INTO breaks (tenant_id, resource_type, resource_id, starts_at, ends_at) 
+        VALUES (42, 'doctor', 101, '2026-10-16 13:00:00+00', '2026-10-16 14:00:00+00')
+        ON CONFLICT DO NOTHING;
+      `);
+    });
+
+    it("rejects booking outside of doctor's working hours", async () => {
+      const payload = {
+        patientId: 556,
+        doctorId: 101,
+        roomId: 12,
+        serviceId: 7, 
+        startsAt: '2026-10-16T03:00:00+02:00' // 3 AM Berlin Time
+      };
+
+      const response = await request(app)
+        .post('/api/appointments')
+        .set('X-Tenant-Id', '42')
+        .send(payload);
+      
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("outside the doctor's working hours");
+    });
+
+    it('rejects booking that overlaps with a scheduled break', async () => {
+      const payload = {
+        patientId: 556,
+        doctorId: 101,
+        roomId: 12,
+        serviceId: 7, 
+        startsAt: '2026-10-16T15:15:00+02:00' // 15:15 Berlin Time (Menabrak break 13:00 UTC)
+      };
+
+      const response = await request(app)
+        .post('/api/appointments')
+        .set('X-Tenant-Id', '42')
+        .send(payload);
+      
+      expect(response.status).toBe(409);
+      expect(response.body.error).toContain("scheduled break");
+    });
+  });
+}
+);
