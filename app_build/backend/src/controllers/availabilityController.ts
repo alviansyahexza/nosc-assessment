@@ -4,10 +4,10 @@ import { AvailabilityService } from '../services/availabilityService';
 import { DrizzleAvailabilityRepository } from '../repositories/drizzle/DrizzleAvailabilityRepository';
 
 const availabilityQuerySchema = z.object({
-  service_id: z.string().transform(Number),
+  serviceId: z.string().transform(Number),
   from: z.string().datetime({ offset: true }),
   to: z.string().datetime({ offset: true }),
-  doctor_ids: z.string().optional().transform(val => val ? val.split(',').map(Number) : undefined),
+  doctorIds: z.string().optional().transform(val => val ? val.split(',').map(Number) : undefined),
 }).refine(data => new Date(data.from) < new Date(data.to), {
   message: "End date (to) must be strictly after start date (from)",
   path: ["to"],
@@ -28,25 +28,13 @@ export const searchAvailability = async (req: Request, res: Response, next: Next
 
     const result = await availabilityService.getAvailability(
       tenantId,
-      query.service_id,
+      query.serviceId,
       query.from,
       query.to,
-      query.doctor_ids
+      query.doctorIds
     );
 
-    // Map camelCase to snake_case for the API contract
-    const mappedResult = {
-      slots: result.slots.map(s => ({
-        doctor_id: s.doctorId,
-        room_id: s.roomId,
-        device_ids: s.deviceIds,
-        start: s.start,
-        end: s.end
-      })),
-      limit: result.limit
-    };
-
-    res.status(200).json(mappedResult);
+    res.status(200).json(result);
   } catch (error: any) {
     next(error);
   }

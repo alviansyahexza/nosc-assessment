@@ -16,9 +16,9 @@ export interface ScheduleBlock {
 }
 
 export interface Slot {
-  doctor_id: number;
-  room_id: number;
-  device_ids: number[];
+  doctorId: number;
+  roomId: number;
+  deviceIds: number[];
   start: string;
   end: string;
 }
