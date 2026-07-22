@@ -6,7 +6,7 @@
 * **Dampaknya:** Frontend akan selalu mengirimkan format waktu dengan akhiran `Z` (murni UTC tanpa informasi *offset* lokal). Jika ini dibiarkan, saat kita menerapkan *Timezone-Blinded Backend*, semua pesanan akan ditolak karena sistem akan keliru membaca jam UTC sebagai jam lokal.
 * **Solusi Menunggu:** Mengganti semua pemanggilan `toISOString()` di `App.tsx` dan `BookingFlow.tsx` menggunakan fungsi `formatISO()` dari `date-fns`.
 
-### 🛡️ 2. Celah Keamanan: Validasi Jam Kerja & Istirahat
+### ✅ 2. Validasi Jam Kerja & Istirahat di Backend (SELESAI)
 * **Kondisi Saat Ini:** *Implementation Plan* sudah disetujui, tapi kode belum dieksekusi. API `POST /appointments` masih mengizinkan pembuatan jadwal di jam 3 pagi (selama tidak bertabrakan dengan jadwal pasien lain).
 * **Solusi Menunggu:** Memasukkan logika validasi *Drizzle Query Builder* ke dalam fungsi `createBooking` di `DrizzleAppointmentRepository.ts` untuk memblokir jadwal yang berada di luar tabel `working_hours` atau yang menabrak `breaks`.
 
