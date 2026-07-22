@@ -10,6 +10,10 @@
 * **Kondisi Saat Ini:** *Implementation Plan* sudah disetujui, tapi kode belum dieksekusi. API `POST /appointments` masih mengizinkan pembuatan jadwal di jam 3 pagi (selama tidak bertabrakan dengan jadwal pasien lain).
 * **Solusi Menunggu:** Memasukkan logika validasi *Drizzle Query Builder* ke dalam fungsi `createBooking` di `DrizzleAppointmentRepository.ts` untuk memblokir jadwal yang berada di luar tabel `working_hours` atau yang menabrak `breaks`.
 
+### 🚨 3. Menyiapkan Artefak Deliverables Akhir (Tertunda)
+* **Kondisi Saat Ini:** Fitur sudah selesai 100%, namun dokumen untuk serah terima proyek (sesuai `README.md`) belum dirakit secara rapi.
+* **Solusi Menunggu:** Kita perlu mengekstrak `ddl.sql` dan `seed.sql` ke dalam folder `db/` di *root*, menyusun dokumen arsitektur `DESIGN.md` yang membahas isolasi dan skalabilitas (*50k bookings/day*), serta memberikan instruksi *Runbook* yang jelas di `README.md`.
+
 ### 📦 3. Ketidakpatuhan Format Kembalian (*Response*) API Booking
 * **Kondisi Saat Ini:** Saat ini `POST /appointments` hanya mengembalikan `{ success: true, appointmentId: 123 }`.
 * **Dampaknya:** Melanggar kontrak API `README.md` yang mewajibkan API mengembalikan data lengkap: `id, starts_at, ends_at, buffer_before_min, buffer_after_min`.
