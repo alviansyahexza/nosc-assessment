@@ -46,9 +46,9 @@ export function BookingFlow({ onDoctorSelect, onBookingComplete }: BookingFlowPr
     const toDate = addDays(fromDate, 1);
 
     try {
-      let endpoint = `/availability?service_id=${selectedService}&from=${fromDate.toISOString()}&to=${toDate.toISOString()}`;
+      let endpoint = `/availability?serviceId=${selectedService}&from=${fromDate.toISOString()}&to=${toDate.toISOString()}`;
       if (selectedDoctor) {
-        endpoint += `&doctor_ids=${selectedDoctor}`;
+        endpoint += `&doctorIds=${selectedDoctor}`;
       }
 
       const data = await fetchApi(endpoint);
@@ -66,12 +66,11 @@ export function BookingFlow({ onDoctorSelect, onBookingComplete }: BookingFlowPr
       await fetchApi('/appointments', {
         method: 'POST',
         body: JSON.stringify({
-          service_id: Number(selectedService),
-          doctor_id: slot.doctor_id,
-          room_id: slot.room_id,
-          device_ids: slot.device_ids,
-          start: slot.start,
-          end: slot.end,
+          patientId: 1, // Hardcoded for now
+          serviceId: Number(selectedService),
+          doctorId: slot.doctorId,
+          roomId: slot.roomId,
+          startsAt: slot.start,
         }),
       });
       alert('Booking successful!');
@@ -143,13 +142,13 @@ export function BookingFlow({ onDoctorSelect, onBookingComplete }: BookingFlowPr
             {availableSlots.map((slot, idx) => {
               const start = new Date(slot.start);
               const end = new Date(slot.end);
-              const doctor = doctors.find(d => d.id === slot.doctor_id);
+              const doctor = doctors.find(d => d.id === slot.doctorId);
               
               return (
                 <div key={idx} className="slot-card">
                   <div className="slot-info">
                     <span className="slot-time">{format(start, 'HH:mm')} - {format(end, 'HH:mm')}</span>
-                    <span className="slot-doc">{doctor ? doctor.name : `Doctor #${slot.doctor_id}`}</span>
+                    <span className="slot-doc">{doctor ? doctor.name : `Doctor #${slot.doctorId}`}</span>
                   </div>
                   <button onClick={() => handleBook(slot)} className="btn-book">Book Now</button>
                 </div>

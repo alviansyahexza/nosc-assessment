@@ -8,7 +8,7 @@ const bookingSchema = z.object({
   doctorId: z.number(),
   roomId: z.number(),
   serviceId: z.number(),
-  requestedStartTime: z.string().datetime({ offset: true }), // Enforce ISO 8601
+  startsAt: z.string().datetime({ offset: true }), // Enforce ISO 8601
 });
 
 // Manual DI wiring (simplest form)
@@ -26,7 +26,7 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
       data.doctorId,
       data.roomId,
       data.serviceId,
-      data.requestedStartTime
+      data.startsAt
     );
 
     req.log.info({ appointmentId }, 'Booking successfully created');

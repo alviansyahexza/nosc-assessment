@@ -17,7 +17,7 @@ export class ValidationError extends Error {
 export class BookingService {
   constructor(private readonly appointmentRepo: IAppointmentRepository) { }
 
-  async createBooking(tenantId: number, patientId: number, doctorId: number, roomId: number, serviceId: number, requestedStartTime: string) {
+  async createBooking(tenantId: number, patientId: number, doctorId: number, roomId: number, serviceId: number, startsAt: string) {
     const serviceReqs = await this.appointmentRepo.getServiceRequirements(tenantId, serviceId);
 
     if (!serviceReqs) {
@@ -27,9 +27,9 @@ export class BookingService {
     // If the service dictates a specific room, use it. Otherwise, use the user-selected room.
     const finalRoomId = serviceReqs.requiredRoomId !== null ? serviceReqs.requiredRoomId : roomId;
 
-    const requestedStart = new Date(requestedStartTime);
+    const requestedStart = new Date(startsAt);
     if (isNaN(requestedStart.getTime())) {
-      throw new ValidationError('Invalid requestedStartTime format');
+      throw new ValidationError('Invalid startsAt format');
     }
 
     // Calculate total blocked time including buffers
