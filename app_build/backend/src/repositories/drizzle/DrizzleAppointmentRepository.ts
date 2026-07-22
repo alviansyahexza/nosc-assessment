@@ -74,6 +74,12 @@ export class DrizzleAppointmentRepository implements IAppointmentRepository {
       if (error.code === '23P01') {
         throw new ConflictError('The selected time slot overlaps with an existing booking for the requested doctor, room, or device.');
       }
+      // PostgreSQL Foreign Key constraint violation code is 23503
+      if (error.code === '23503') {
+        const err = new Error('One or more selected resources (Doctor, Room, Patient) do not exist or do not belong to this clinic.');
+        err.name = 'ValidationError';
+        throw err;
+      }
       throw error;
     }
   }
