@@ -8,7 +8,7 @@ describe('Availability API Integration Tests', () => {
     const response = await request(app)
       .get('/api/availability')
       .query({
-        service_id: 7, // Advanced Ultrasound
+        serviceId: 7, // Advanced Ultrasound
         from: '2026-10-15T00:00:00.000Z',
         to: '2026-10-20T00:00:00.000Z'
       })
@@ -22,8 +22,8 @@ describe('Availability API Integration Tests', () => {
     if (response.body.slots.length > 0) {
       expect(response.body.slots[0]).toHaveProperty('start');
       expect(response.body.slots[0]).toHaveProperty('end');
-      expect(response.body.slots[0]).toHaveProperty('doctor_id');
-      expect(response.body.slots[0]).toHaveProperty('room_id');
+      expect(response.body.slots[0]).toHaveProperty('doctorId');
+      expect(response.body.slots[0]).toHaveProperty('roomId');
     }
   });
 
@@ -31,7 +31,7 @@ describe('Availability API Integration Tests', () => {
     const response = await request(app)
       .get('/api/availability')
       .query({
-        service_id: 7,
+        serviceId: 7,
         from: '2026-10-15T00:00:00.000Z',
         to: '2026-10-20T00:00:00.000Z'
       });

@@ -22,7 +22,7 @@ describe('Booking API Integration Tests', () => {
       doctorId: 101,  // Dr. Smith
       roomId: 12,     // X-Ray Room 1
       serviceId: 7,   // Advanced Ultrasound
-      requestedStartTime: '2026-10-15T10:00:00.000Z'
+      startsAt: '2026-10-15T10:00:00.000Z'
     };
 
     // We simulate 2 exact same requests at the exact same millisecond
@@ -62,7 +62,7 @@ describe('Booking API Integration Tests', () => {
         doctorId: 101,
         roomId: 12,
         serviceId: 7,
-        requestedStartTime: '2026-10-15T11:00:00.000Z'
+        startsAt: '2026-10-15T11:00:00.000Z'
       });
       
     expect(response.status).toBe(401);
@@ -87,7 +87,7 @@ describe('Booking API Integration Tests', () => {
           // Missing doctorId and patientId
           roomId: 12,
           serviceId: 7,
-          requestedStartTime: '2026-10-15T11:00:00.000Z'
+          startsAt: '2026-10-15T11:00:00.000Z'
         });
       
       expect(response.status).toBe(400);
@@ -102,7 +102,7 @@ describe('Booking API Integration Tests', () => {
           doctorId: 101,
           roomId: 12,
           serviceId: 7,
-          requestedStartTime: 'invalid-date-string'
+          startsAt: 'invalid-date-string'
         });
       
       expect(response.status).toBe(400);
@@ -116,7 +116,7 @@ describe('Booking API Integration Tests', () => {
         doctorId: 101,
         roomId: 12,
         serviceId: 7, // Advanced Ultrasound (duration: 30, bufferBefore: 5, bufferAfter: 10) -> total 45 mins. Blocked: 11:55 to 12:40
-        requestedStartTime: '2026-10-16T12:00:00.000Z'
+        startsAt: '2026-10-16T12:00:00.000Z'
       };
 
       const payload2 = {
@@ -124,9 +124,9 @@ describe('Booking API Integration Tests', () => {
         doctorId: 101,
         roomId: 12,
         serviceId: 7,
-        // For payload2, Blocked Start must be >= 12:40. Since bufferBefore is 5, requestedStartTime must be 12:45.
+        // For payload2, Blocked Start must be >= 12:40. Since bufferBefore is 5, startsAt must be 12:45.
         // Blocked will be 12:40 to 13:25.
-        requestedStartTime: '2026-10-16T12:45:00.000Z' 
+        startsAt: '2026-10-16T12:45:00.000Z' 
       };
 
       const res1 = await request(app)
@@ -161,7 +161,7 @@ describe('Booking API Integration Tests', () => {
         doctorId: 101, // Belongs to 42
         roomId: 12,    // Belongs to 42
         serviceId: 999,
-        requestedStartTime: '2026-10-17T14:00:00.000Z'
+        startsAt: '2026-10-17T14:00:00.000Z'
       };
 
       const response = await request(app)
