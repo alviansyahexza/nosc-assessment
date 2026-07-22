@@ -7,6 +7,9 @@ export interface CreateAppointmentDTO {
   startsAt: Date;
   endsAt: Date;
   deviceIds: number[];
+  requestedWeekday: number;
+  requestedLocalStartTime: string;
+  requestedLocalEndTime: string;
 }
 
 export interface ServiceRequirements {

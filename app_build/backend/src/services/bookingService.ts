@@ -32,7 +32,23 @@ export class BookingService {
       throw new ValidationError('Invalid startsAt format');
     }
 
-    // Calculate total blocked time including buffers
+    // 1. Timezone-Blinded Extraction from `startsAt`
+    const [datePart, rest] = startsAt.split('T');
+    const startTimeString = rest.substring(0, 8); // e.g. "09:30:00"
+
+    // Calculate naive weekday from the literal date string (assuming YYYY-MM-DD)
+    const naiveDate = new Date(`${datePart}T00:00:00Z`);
+    const weekday = naiveDate.getUTCDay();
+
+    // Calculate total duration
+    const totalDurationMin = serviceReqs.durationMin + serviceReqs.bufferBeforeMin + serviceReqs.bufferAfterMin;
+
+    // Calculate naive end time string using a 1970 UTC epoch base to prevent timezone shifts
+    const naiveStartEpoch = new Date(`1970-01-01T${startTimeString}Z`);
+    const naiveEndEpoch = new Date(naiveStartEpoch.getTime() + totalDurationMin * 60000);
+    const endTimeString = naiveEndEpoch.toISOString().substring(11, 19); // e.g. "10:15:00"
+
+    // Calculate total blocked time including buffers (UTC for DB storage)
     const blockedStart = new Date(requestedStart.getTime() - serviceReqs.bufferBeforeMin * 60000);
     const blockedEnd = new Date(requestedStart.getTime() + (serviceReqs.durationMin + serviceReqs.bufferAfterMin) * 60000);
 
@@ -44,7 +60,10 @@ export class BookingService {
       serviceId,
       startsAt: blockedStart,
       endsAt: blockedEnd,
-      deviceIds: serviceReqs.requiredDeviceIds
+      deviceIds: serviceReqs.requiredDeviceIds,
+      requestedWeekday: weekday,
+      requestedLocalStartTime: startTimeString,
+      requestedLocalEndTime: endTimeString
     });
 
     return appointmentId;
