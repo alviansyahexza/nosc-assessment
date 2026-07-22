@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format, addDays, startOfDay } from 'date-fns';
+import { format, addDays, startOfDay, formatISO } from 'date-fns';
 import { fetchApi } from '../api/client';
 import type { Service, Doctor, Slot } from '../api/types';
 import './BookingFlow.css';
@@ -46,7 +46,7 @@ export function BookingFlow({ onDoctorSelect, onBookingComplete }: BookingFlowPr
     const toDate = addDays(fromDate, 1);
 
     try {
-      let endpoint = `/availability?serviceId=${selectedService}&from=${fromDate.toISOString()}&to=${toDate.toISOString()}`;
+      let endpoint = `/availability?serviceId=${selectedService}&from=${formatISO(fromDate)}&to=${formatISO(toDate)}`;
       if (selectedDoctor) {
         endpoint += `&doctorIds=${selectedDoctor}`;
       }

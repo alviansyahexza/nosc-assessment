@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { addDays, startOfDay } from 'date-fns';
+import { addDays, startOfDay, formatISO } from 'date-fns';
 import { BookingFlow } from './components/BookingFlow';
 import { CalendarView } from './components/CalendarView';
 import { fetchApi } from './api/client';
@@ -20,7 +20,7 @@ function App() {
     try {
       const from = startOfDay(date);
       const to = addDays(from, 1);
-      const data = await fetchApi(`/doctors/${doctorId}/schedule?from=${from.toISOString()}&to=${to.toISOString()}`);
+      const data = await fetchApi(`/doctors/${doctorId}/schedule?from=${formatISO(from)}&to=${formatISO(to)}`);
       setSchedule(data.schedule || []);
     } catch (error) {
       console.error('Failed to load schedule:', error);
