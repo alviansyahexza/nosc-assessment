@@ -20,7 +20,12 @@ function App() {
     try {
       const from = startOfDay(date);
       const to = addDays(from, 1);
-      const data = await fetchApi(`/doctors/${doctorId}/schedule?from=${formatISO(from)}&to=${formatISO(to)}`);
+      const params = new URLSearchParams({
+        from: formatISO(from),
+        to: formatISO(to),
+      });
+
+      const data = await fetchApi(`/doctors/${doctorId}/schedule?${params.toString()}`);
       setSchedule(data.schedule || []);
     } catch (error) {
       console.error('Failed to load schedule:', error);

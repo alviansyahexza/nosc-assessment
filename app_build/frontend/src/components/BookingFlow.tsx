@@ -46,12 +46,17 @@ export function BookingFlow({ onDoctorSelect, onBookingComplete }: BookingFlowPr
     const toDate = addDays(fromDate, 1);
 
     try {
-      let endpoint = `/availability?serviceId=${selectedService}&from=${formatISO(fromDate)}&to=${formatISO(toDate)}`;
+      const params = new URLSearchParams({
+        serviceId: String(selectedService),
+        from: formatISO(fromDate),
+        to: formatISO(toDate),
+      });
+
       if (selectedDoctor) {
-        endpoint += `&doctorIds=${selectedDoctor}`;
+        params.append('doctorIds', String(selectedDoctor));
       }
 
-      const data = await fetchApi(endpoint);
+      const data = await fetchApi(`/availability?${params.toString()}`);
       setAvailableSlots(data.slots || []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch availability');
