@@ -37,7 +37,7 @@
 | Data Modeling & Tenant Isolation | 20 | **20** | Air-tight composite FK schema and GiST constraints. |
 | Conflict Detection Correctness | 25 | **25** | DB-level exclusion constraints + transaction checks + separated core vs blocked buffer windows. |
 | Availability Search Quality | 20 | **19** | Performant sweep-line algorithm returning top 3 slots. |
-| API Design & Documentation | 15 | **12** | Express + Zod + Swagger mounted at `/docs`. |
+| API Design & Documentation | 15 | **15** | Express + Zod + Swagger mounted at `/docs` with end-to-end TypeScript `camelCase` contracts. |
 | Frontend UX | 10 | **10** | Integrated `react-big-calendar` for smooth 24-hour schedule view & availability wizard. |
 | Code Quality & Tests | 10 | **10** | TypeScript strict mode, 29 unit & integration tests covering concurrency & timezone handling. |
 | *Stretch Bonus (Exclusion Constraints)* | +10 | **+5** | Implemented `EXCLUDE USING gist` with `tstzrange`. |
@@ -53,13 +53,11 @@
 2. **Frontend Schedule View UI**:
    - ✅ **FIXED (Issue #5):** Integrated `react-big-calendar` with `dateFnsLocalizer` for a seamless 24-hour Google Calendar-style timeline with auto-scroll to 07:00 AM.
 
-2. **API Field Casing Alignment**:
-   - *Current:* JSON payloads use `camelCase` (`doctorId`, `patientId`, `startsAt`).
-   - *Recommendation:* Standardize to `snake_case` if strict adherence to the example README schema is required by external consumers.
+3. **API Field Casing Alignment**:
+   - ✅ **DESIGN CHOICE CONFIRMED (`camelCase`):** Native `camelCase` is used across the full-stack TypeScript boundary (Express & React) to eliminate runtime key-mapping overhead and maintain strict 1-to-1 end-to-end type safety.
 
-3. **Optional `device_ids` in POST Payload**:
-   - *Current:* Required devices are automatically pulled from service definitions.
-   - *Recommendation:* Support client-supplied `device_ids[]` override in the POST Zod schema.
+4. **Device Resolution Strategy**:
+   - ✅ **DESIGN CHOICE CONFIRMED (Backend DB Resolution):** Device requirements (`device_ids[]`) are automatically resolved by backend from `service_resources` DB definitions as the Single Source of Truth, preventing client-side tampering or invalid device overrides.
 
 4. **Sweep-line Determinism**:
    - *Recommendation:* Fix tie-breaking in `availabilityService.ts` to ensure logical consistency (ends before starts) when timestamps are identical.

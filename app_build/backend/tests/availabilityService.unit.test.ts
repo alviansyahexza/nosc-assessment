@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { AvailabilityService } from '../src/services/availabilityService';
+import { AvailabilityService, calculateFreeIntervals } from '../src/services/availabilityService';
 import { IAvailabilityRepository, AvailabilityResourceData } from '../src/repositories/interfaces/IAvailabilityRepository';
 import { addMinutes, subMinutes } from 'date-fns';
 
@@ -54,5 +54,39 @@ describe('AvailabilityService (Sweep-Line Unit Tests)', () => {
     // Second slot starts right after total duration (45 mins from 07:00 = 07:45 UTC)
     // Core start = 07:45 + 5m = 07:50 UTC
     expect(result.slots[1].start).toBe('2026-10-15T07:50:00.000Z');
+  });
+
+  it('demonstrates sweep-line tie-breaker issue with back-to-back blocks', () => {
+    const working = [{ start: new Date('2026-10-15T08:00:00Z'), end: new Date('2026-10-15T17:00:00Z') }];
+    const blocked = [
+      { start: new Date('2026-10-15T10:00:00Z'), end: new Date('2026-10-15T11:00:00Z') },
+      { start: new Date('2026-10-15T11:00:00Z'), end: new Date('2026-10-15T12:00:00Z') },
+    ];
+
+    const freeIntervals = calculateFreeIntervals(working, blocked);
+
+    expect(freeIntervals).toEqual([
+      { start: new Date('2026-10-15T08:00:00Z'), end: new Date('2026-10-15T10:00:00Z') },
+      { start: new Date('2026-10-15T12:00:00Z'), end: new Date('2026-10-15T17:00:00Z') }
+    ]);
+  });
+
+  it('demonstrates tie-breaker fragmentation issue with contiguous split shifts', () => {
+    // Two contiguous working hour shifts: Shift 1 (08:00 - 12:00) and Shift 2 (12:00 - 17:00)
+    const working = [
+      { start: new Date('2026-10-15T08:00:00Z'), end: new Date('2026-10-15T12:00:00Z') },
+      { start: new Date('2026-10-15T12:00:00Z'), end: new Date('2026-10-15T17:00:00Z') },
+    ];
+    const blocked: any[] = [];
+
+    const freeIntervals = calculateFreeIntervals(working, blocked);
+
+    // Contiguous shifts should result in a single unified free interval [08:00 - 17:00]
+    // Current code outputs 2 fragmented intervals because w_end is processed before w_start
+    expect(freeIntervals.length).toBe(1);
+    expect(freeIntervals[0]).toEqual({
+      start: new Date('2026-10-15T08:00:00Z'),
+      end: new Date('2026-10-15T17:00:00Z')
+    });
   });
 });

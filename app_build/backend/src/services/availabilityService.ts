@@ -15,8 +15,92 @@ interface Slot {
   end: string;
 }
 
+export function calculateFreeIntervals(workingIntervals: Interval[], blockedIntervals: Interval[]): Interval[] {
+  const events: { time: number; type: 'w_start' | 'w_end' | 'b_start' | 'b_end' }[] = [];
+
+  for (const w of workingIntervals) {
+    events.push({ time: w.start.getTime(), type: 'w_start' });
+    events.push({ time: w.end.getTime(), type: 'w_end' });
+  }
+  for (const b of blockedIntervals) {
+    events.push({ time: b.start.getTime(), type: 'b_start' });
+    events.push({ time: b.end.getTime(), type: 'b_end' });
+  }
+
+  // Sort by time. If time is equal, process 'start' events before 'end' events to ensure safety.
+  events.sort((a, b) => {
+    if (a.time !== b.time) return a.time - b.time;
+    // Secondary sort to prioritize blocking over freeing if times overlap exactly
+    return a.type.localeCompare(b.type);
+  });
+
+  let isWorking = false;
+  let blockCount = 0;
+
+  let isFree = false;
+  let freeStart: number | null = null;
+
+  const freeIntervals: Interval[] = [];
+
+  for (const ev of events) {
+    if (ev.type === 'w_start') isWorking = true;
+    if (ev.type === 'w_end') isWorking = false;
+    if (ev.type === 'b_start') blockCount++;
+    if (ev.type === 'b_end') blockCount--;
+
+    const currentlyFree = isWorking && blockCount === 0;
+
+    if (currentlyFree && !isFree) {
+      // Transition to FREE
+      isFree = true;
+      freeStart = ev.time;
+    } else if (!currentlyFree && isFree) {
+      // Transition to NOT FREE
+      isFree = false;
+      if (freeStart !== null && ev.time > freeStart) {
+        freeIntervals.push({ start: new Date(freeStart), end: new Date(ev.time) });
+      }
+      freeStart = null;
+    }
+  }
+
+  return freeIntervals;
+}
+
+/**
+ * Two-pointer intersection of two lists of disjoint, sorted intervals
+ */
+export function intersectIntervalLists(listA: Interval[], listB: Interval[]): Interval[] {
+  const result: Interval[] = [];
+  let i = 0;
+  let j = 0;
+
+  while (i < listA.length && j < listB.length) {
+    const a = listA[i];
+    const b = listB[j];
+
+    // Find overlap
+    const start = new Date(Math.max(a.start.getTime(), b.start.getTime()));
+    const end = new Date(Math.min(a.end.getTime(), b.end.getTime()));
+
+    if (start < end) {
+      result.push({ start, end });
+    }
+
+    // Advance the pointer that ends first
+    if (a.end < b.end) {
+      i++;
+    } else {
+      j++;
+    }
+  }
+
+  return result;
+}
+
+
 export class AvailabilityService {
-  constructor(private readonly availabilityRepo: IAvailabilityRepository) {}
+  constructor(private readonly availabilityRepo: IAvailabilityRepository) { }
 
   async getAvailability(
     tenantId: number,
@@ -27,9 +111,9 @@ export class AvailabilityService {
   ) {
     const fromDate = new Date(fromDateStr);
     const toDate = new Date(toDateStr);
-    
+
     const data = await this.availabilityRepo.getAvailabilityData(tenantId, serviceId, fromDate, toDate, doctorIds);
-    
+
     // Total required time
     const totalDuration = data.durationMin + data.bufferBeforeMin + data.bufferAfterMin;
 
@@ -52,7 +136,7 @@ export class AvailabilityService {
         if (wh.weekday === weekday) {
           const startUtc = fromZonedTime(`${dateString} ${wh.startTime}`, TIMEZONE);
           const endUtc = fromZonedTime(`${dateString} ${wh.endTime}`, TIMEZONE);
-          
+
           if (!doctorWorkingHours[wh.doctorId]) doctorWorkingHours[wh.doctorId] = [];
           doctorWorkingHours[wh.doctorId].push({ start: startUtc, end: endUtc });
         }
@@ -87,20 +171,20 @@ export class AvailabilityService {
     // 3. Sweep Line Algorithm to find Free Intervals
     const doctorFree: Record<number, Interval[]> = {};
     for (const docId of data.validDoctorIds) {
-      doctorFree[docId] = this.calculateFreeIntervals(doctorWorkingHours[docId] || [], doctorBlocks[docId] || []);
+      doctorFree[docId] = calculateFreeIntervals(doctorWorkingHours[docId] || [], doctorBlocks[docId] || []);
     }
 
     // For rooms and devices, base interval is just fromDate to toDate
     const baseRoomDeviceInterval = [{ start: fromDate, end: toDate }];
-    
+
     const roomFree: Record<number, Interval[]> = {};
     for (const roomId of data.allRoomIds) {
-      roomFree[roomId] = this.calculateFreeIntervals(baseRoomDeviceInterval, roomBlocks[roomId] || []);
+      roomFree[roomId] = calculateFreeIntervals(baseRoomDeviceInterval, roomBlocks[roomId] || []);
     }
 
     const deviceFree: Record<number, Interval[]> = {};
     for (const devId of data.requiredDeviceIds) {
-      deviceFree[devId] = this.calculateFreeIntervals(baseRoomDeviceInterval, deviceBlocks[devId] || []);
+      deviceFree[devId] = calculateFreeIntervals(baseRoomDeviceInterval, deviceBlocks[devId] || []);
     }
 
     // 4. Intersect & Chunk Slots
@@ -109,11 +193,11 @@ export class AvailabilityService {
     for (const docId of data.validDoctorIds) {
       for (const roomId of data.allRoomIds) {
         // Intersect Doc and Room
-        let intersection = this.intersectIntervalLists(doctorFree[docId], roomFree[roomId]);
-        
+        let intersection = intersectIntervalLists(doctorFree[docId], roomFree[roomId]);
+
         // Intersect all required Devices
         for (const devId of data.requiredDeviceIds) {
-          intersection = this.intersectIntervalLists(intersection, deviceFree[devId]);
+          intersection = intersectIntervalLists(intersection, deviceFree[devId]);
         }
 
         // Chunk the resulting free blocks into bookable slots (Sequential packing)
@@ -124,7 +208,7 @@ export class AvailabilityService {
             if (currentEnd > block.end) {
               break; // Doesn't fit in this block
             }
-            
+
             // Note: We return the start/end of the *Core Service* by adding bufferBefore
             const coreStart = addMinutes(currentStart, data.bufferBeforeMin);
             const coreEnd = addMinutes(coreStart, data.durationMin);
@@ -147,97 +231,11 @@ export class AvailabilityService {
 
     // 5. Sort by time and limit to top 3 slots
     allSlots.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
-    
+
     // Only return the next 3 available slots as per README requirement
     return {
       slots: allSlots.slice(0, 3),
       limit: 3
     };
-  }
-
-  /**
-   * The Sweep Line Logic
-   */
-  private calculateFreeIntervals(workingIntervals: Interval[], blockedIntervals: Interval[]): Interval[] {
-    const events: { time: number; type: 'w_start' | 'w_end' | 'b_start' | 'b_end' }[] = [];
-
-    for (const w of workingIntervals) {
-      events.push({ time: w.start.getTime(), type: 'w_start' });
-      events.push({ time: w.end.getTime(), type: 'w_end' });
-    }
-    for (const b of blockedIntervals) {
-      events.push({ time: b.start.getTime(), type: 'b_start' });
-      events.push({ time: b.end.getTime(), type: 'b_end' });
-    }
-
-    // Sort by time. If time is equal, process 'start' events before 'end' events to ensure safety.
-    events.sort((a, b) => {
-      if (a.time !== b.time) return a.time - b.time;
-      // Secondary sort to prioritize blocking over freeing if times overlap exactly
-      return a.type.localeCompare(b.type); 
-    });
-
-    let isWorking = false;
-    let blockCount = 0;
-    
-    let isFree = false;
-    let freeStart: number | null = null;
-    
-    const freeIntervals: Interval[] = [];
-
-    for (const ev of events) {
-      if (ev.type === 'w_start') isWorking = true;
-      if (ev.type === 'w_end') isWorking = false;
-      if (ev.type === 'b_start') blockCount++;
-      if (ev.type === 'b_end') blockCount--;
-
-      const currentlyFree = isWorking && blockCount === 0;
-
-      if (currentlyFree && !isFree) {
-        // Transition to FREE
-        isFree = true;
-        freeStart = ev.time;
-      } else if (!currentlyFree && isFree) {
-        // Transition to NOT FREE
-        isFree = false;
-        if (freeStart !== null && ev.time > freeStart) {
-          freeIntervals.push({ start: new Date(freeStart), end: new Date(ev.time) });
-        }
-        freeStart = null;
-      }
-    }
-
-    return freeIntervals;
-  }
-
-  /**
-   * Two-pointer intersection of two lists of disjoint, sorted intervals
-   */
-  private intersectIntervalLists(listA: Interval[], listB: Interval[]): Interval[] {
-    const result: Interval[] = [];
-    let i = 0;
-    let j = 0;
-
-    while (i < listA.length && j < listB.length) {
-      const a = listA[i];
-      const b = listB[j];
-
-      // Find overlap
-      const start = new Date(Math.max(a.start.getTime(), b.start.getTime()));
-      const end = new Date(Math.min(a.end.getTime(), b.end.getTime()));
-
-      if (start < end) {
-        result.push({ start, end });
-      }
-
-      // Advance the pointer that ends first
-      if (a.end < b.end) {
-        i++;
-      } else {
-        j++;
-      }
-    }
-
-    return result;
   }
 }
