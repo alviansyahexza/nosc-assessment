@@ -1,0 +1,46 @@
+### Nosc Clinic Scheduling System — REST Client Requests
+### Target Tenant: 42 (Nosc Clinic Berlin)
+
+@baseUrl = http://localhost:3000/api
+@tenantId = 42
+
+### 1. Get Tenant Details & Timezone
+GET {{baseUrl}}/tenant
+X-Tenant-Id: {{tenantId}}
+
+### 2. Get Services List
+GET {{baseUrl}}/services
+X-Tenant-Id: {{tenantId}}
+
+### 3. Get Doctors List
+GET {{baseUrl}}/doctors
+X-Tenant-Id: {{tenantId}}
+
+### 4. Get Patients List
+GET {{baseUrl}}/patients
+X-Tenant-Id: {{tenantId}}
+
+### 5. Search Availability (Service 7 - Advanced Ultrasound)
+GET {{baseUrl}}/availability?serviceId=7&from=2026-10-15T00:00:00%2B02:00&to=2026-10-16T00:00:00%2B02:00&doctorIds=101,102
+X-Tenant-Id: {{tenantId}}
+
+### 6. Create Appointment
+POST {{baseUrl}}/appointments
+X-Tenant-Id: {{tenantId}}
+Content-Type: application/json
+
+{
+  "patientId": 555,
+  "doctorId": 101,
+  "roomId": 12,
+  "serviceId": 7,
+  "startsAt": "2026-10-15T08:05:00+02:00"
+}
+
+### 7. Get Doctor Schedule (Doctor 101)
+GET {{baseUrl}}/doctors/101/schedule?from=2026-10-15T00:00:00%2B02:00&to=2026-10-16T00:00:00%2B02:00
+X-Tenant-Id: {{tenantId}}
+
+### 8. Cancel Appointment (Replace 1 with created ID)
+DELETE {{baseUrl}}/appointments/1
+X-Tenant-Id: {{tenantId}}
