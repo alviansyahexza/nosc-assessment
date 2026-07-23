@@ -120,20 +120,16 @@
 1. **DevOps Artifacts**:
    - Add a root `docker-compose.yml` to launch Postgres + Backend + Frontend in a single command for evaluators.
 
-2. **Tenant Timezone Not Read From Database**:
-   - The `tenants` table defines a `timezone` column (`VARCHAR(50) DEFAULT 'Europe/Berlin'`), but both `availabilityService.ts` (`const TIMEZONE = 'Europe/Berlin'`) and `bookingService.ts` (`const DEFAULT_TIMEZONE = 'Europe/Berlin'`) hardcode the timezone instead of reading it from the tenant's DB record. If a tenant operates in a different timezone (e.g., `America/New_York`), all availability and booking calculations would still use `Europe/Berlin`. Production fix: query `tenants.timezone` by `tenantId` and pass it through the service layer.
-   - Frontend should also display the tenant's timezone alongside the Tenant ID badge (e.g., `Tenant ID: 42 | Europe/Berlin`) so clinic staff are always aware of which timezone the schedule is rendered in.
-
-3. **Frontend Hardcoded Values**:
+2. **Frontend Hardcoded Values**:
    - `TENANT_ID = '42'` and `patientId: 1` are hardcoded in `client.ts` / `BookingFlow.tsx`. Acceptable for assessment scope; production would use environment variables and auth context.
 
-4. **Frontend Responsive Design**:
+3. **Frontend Responsive Design**:
    - No `@media` breakpoints for mobile/tablet viewports. Desktop-first design is acceptable for assessment scope.
 
-5. **Frontend Error Boundaries**:
+4. **Frontend Error Boundaries**:
    - No React Error Boundaries. Silent `console.error` on API failures in initial data fetches. Acceptable for assessment scope; production would add toast notifications and error boundaries.
 
-6. **Idempotency**:
+5. **Idempotency**:
    - `Idempotency-Key` header not implemented (listed as optional in README). DB-level exclusion constraints prevent duplicate bookings at the data layer.
 
 ---
