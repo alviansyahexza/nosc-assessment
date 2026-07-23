@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: nosc_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: nosc_clinic
+    ports:
+      - "5432:5432"
+    volumes:
+      - nosc_pgdata:/var/lib/postgresql/data
+      - ./app_build/db/ddl.sql:/docker-entrypoint-initdb.d/01_ddl.sql
+      - ./app_build/db/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nosc_clinic"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./app_build/backend
+      dockerfile: Dockerfile
+    container_name: nosc_backend
+    restart: always
+    environment:
+      DATABASE_URL: postgres://postgres:mysecretpassword@db:5432/nosc_clinic
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./app_build/frontend
+      dockerfile: Dockerfile
+    container_name: nosc_frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  nosc_pgdata:
