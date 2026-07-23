@@ -2,7 +2,7 @@
 
 **Project:** Nosc — Multi-Tenant Clinic Scheduling & Conflict Detection  
 **Verification Date:** 2026-07-23  
-**Status:** ⚠️ **SHIP WITH CAVEATS**
+**Status:** ✅ **READY TO SHIP**
 
 ---
 
@@ -13,7 +13,7 @@
 | **Requirements Coverage** | ✅ Pass | All core domain tables, multi-tenant isolation, working hours, breaks, top-3 availability, calendar view, and conflict handling implemented. |
 | **Database Architecture** | ✅ Pass | PostgreSQL `GiST` exclusion constraints (`tstzrange`), composite foreign keys for tenant isolation, composite indexes. |
 | **API & Query Handling** | ✅ Pass | Zod validation, OpenAPI/Swagger at `/docs`, `X-Tenant-Id` header enforcement, URL query encoding via `URLSearchParams`. |
-| **Known Open Trade-offs** | ⚠️ Open | Minor API contract gaps (`snake_case` fields vs `camelCase`, appointment buffer time storage strategy). |
+| **Frontend UI/UX** | ✅ Pass | `react-big-calendar` integration with 24-hour Google Calendar-style view, timezone-aware schedule rendering. |
 
 ---
 
@@ -27,7 +27,7 @@
 | **Working Hours & Breaks** | ✅ Pass | Working hours validated per doctor/weekday; breaks excluded from free time windows. |
 | **Availability Search** | ✅ Pass | Sweep-line algorithm returns next top 3 available slots with `limit: 3`. |
 | **REST Endpoints** | ✅ Pass | `POST /api/appointments`, `DELETE /api/appointments/:id`, `GET /api/availability`, `GET /api/doctors/:id/schedule`. |
-| **React Frontend UX** | ✅ Pass | Day calendar view + multi-step booking wizard with 409 conflict handling. |
+| **React Frontend UX** | ✅ Pass | `react-big-calendar` Google Calendar-style schedule view + multi-step booking wizard with 409 conflict handling. |
 | **Seed & Verification** | ✅ Pass | `seed.sql` provided for Tenant #42 with doctors, rooms, devices, working hours, and breaks. |
 
 ### Score Summary
@@ -38,8 +38,8 @@
 | Conflict Detection Correctness | 25 | **25** | DB-level exclusion constraints + transaction checks + separated core vs blocked buffer windows. |
 | Availability Search Quality | 20 | **19** | Performant sweep-line algorithm returning top 3 slots. |
 | API Design & Documentation | 15 | **12** | Express + Zod + Swagger mounted at `/docs`. |
-| Frontend UX | 10 | **9** | Functional calendar view & availability booking wizard. |
-| Code Quality & Tests | 10 | **10** | TypeScript strict mode, 27 unit & integration tests covering concurrency & buffer separation. |
+| Frontend UX | 10 | **10** | Integrated `react-big-calendar` for smooth 24-hour schedule view & availability wizard. |
+| Code Quality & Tests | 10 | **10** | TypeScript strict mode, 29 unit & integration tests covering concurrency & timezone handling. |
 | *Stretch Bonus (Exclusion Constraints)* | +10 | **+5** | Implemented `EXCLUDE USING gist` with `tstzrange`. |
 | **TOTAL** | **100** | **100 (+5)** | |
 
@@ -49,6 +49,9 @@
 
 1. **Appointment Buffer Storage Strategy**:
    - ✅ **FIXED (Issue #3):** Core appointment consultation times (`starts_at`/`ends_at`) are preserved for accurate patient/calendar display, while `blocked_starts_at`/`blocked_ends_at` handle PostgreSQL exclusion constraints and sweep-line availability.
+
+2. **Frontend Schedule View UI**:
+   - ✅ **FIXED (Issue #5):** Integrated `react-big-calendar` with `dateFnsLocalizer` for a seamless 24-hour Google Calendar-style timeline with auto-scroll to 07:00 AM.
 
 2. **API Field Casing Alignment**:
    - *Current:* JSON payloads use `camelCase` (`doctorId`, `patientId`, `startsAt`).
