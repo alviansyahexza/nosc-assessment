@@ -1,7 +1,7 @@
 import { db } from '../../db';
 import { eq, and, gte, lt } from 'drizzle-orm';
-import { tenants, services, doctors, appointments } from '../../db/schema';
-import { IUtilityRepository, ServiceInfo, DoctorInfo, ScheduleBlock, TenantInfo } from '../interfaces/IUtilityRepository';
+import { tenants, services, doctors, patients, appointments } from '../../db/schema';
+import { IUtilityRepository, ServiceInfo, DoctorInfo, PatientInfo, ScheduleBlock, TenantInfo } from '../interfaces/IUtilityRepository';
 
 export class DrizzleUtilityRepository implements IUtilityRepository {
   async getTenantInfo(tenantId: number): Promise<TenantInfo | null> {
@@ -31,6 +31,14 @@ export class DrizzleUtilityRepository implements IUtilityRepository {
       id: doctors.id,
       name: doctors.name,
     }).from(doctors).where(eq(doctors.tenantId, tenantId));
+  }
+
+  async getPatients(tenantId: number): Promise<PatientInfo[]> {
+    return await db.select({
+      id: patients.id,
+      name: patients.name,
+      email: patients.email,
+    }).from(patients).where(eq(patients.tenantId, tenantId));
   }
 
   async getDoctorSchedule(tenantId: number, doctorId: number, from: Date, to: Date): Promise<ScheduleBlock[]> {

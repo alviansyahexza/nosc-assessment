@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getServices, getDoctors, getDoctorSchedule, getTenantInfo } from '../controllers/utilityController';
+import { getServices, getDoctors, getPatients, getDoctorSchedule, getTenantInfo } from '../controllers/utilityController';
 
 const router = Router();
 
@@ -86,6 +86,36 @@ router.get('/services', getServices);
  *                         type: string
  */
 router.get('/doctors', getDoctors);
+
+/**
+ * @swagger
+ * /api/patients:
+ *   get:
+ *     summary: Retrieve a list of patients for the tenant
+ *     tags: [Utilities]
+ *     security:
+ *       - TenantIdAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of patients.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 patients:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ */
+router.get('/patients', getPatients);
 
 /**
  * @swagger

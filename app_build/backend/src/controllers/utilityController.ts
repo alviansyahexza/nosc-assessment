@@ -47,6 +47,16 @@ export const getDoctors = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+export const getPatients = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.tenantId!;
+    const patients = await utilityService.getPatients(tenantId);
+    res.status(200).json({ patients });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getDoctorSchedule = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.tenantId!;

@@ -21,9 +21,16 @@ export interface TenantInfo {
   timezone: string;
 }
 
+export interface PatientInfo {
+  id: number;
+  name: string;
+  email?: string | null;
+}
+
 export interface IUtilityRepository {
   getTenantInfo(tenantId: number): Promise<TenantInfo | null>;
   getServices(tenantId: number): Promise<ServiceInfo[]>;
   getDoctors(tenantId: number): Promise<DoctorInfo[]>;
+  getPatients(tenantId: number): Promise<PatientInfo[]>;
   getDoctorSchedule(tenantId: number, doctorId: number, from: Date, to: Date): Promise<ScheduleBlock[]>;
 }

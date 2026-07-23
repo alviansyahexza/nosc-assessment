@@ -15,6 +15,10 @@ export class UtilityService {
     return this.utilityRepo.getDoctors(tenantId);
   }
 
+  async getPatients(tenantId: number) {
+    return this.utilityRepo.getPatients(tenantId);
+  }
+
   async getDoctorSchedule(tenantId: number, doctorId: number, from: Date, to: Date) {
     return this.utilityRepo.getDoctorSchedule(tenantId, doctorId, from, to);
   }
