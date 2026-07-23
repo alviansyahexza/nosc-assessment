@@ -1,64 +1,59 @@
-import { format, parseISO, differenceInMinutes, startOfDay, set } from 'date-fns';
+import { useMemo } from 'react';
+import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay, parseISO } from 'date-fns';
+import { enUS } from 'date-fns/locale/en-US';
 import type { ScheduleBlock } from '../api/types';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './CalendarView.css';
+
+const locales = {
+  'en-US': enUS,
+};
+
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
+  getDay,
+  locales,
+});
 
 interface CalendarViewProps {
   date: Date;
   schedule: ScheduleBlock[];
 }
 
-const HOURS = Array.from({ length: 11 }, (_, i) => i + 8); // 08:00 to 18:00
-
 export function CalendarView({ date, schedule }: CalendarViewProps) {
-  const dayStart = startOfDay(date);
-  const startHour = 8;
-  const totalMinutes = 10 * 60; // 8 AM to 6 PM
+  const events = useMemo(() => {
+    return schedule.map((block, idx) => ({
+      id: idx,
+      title: `Appointment (${block.status || 'Booked'})`,
+      start: parseISO(block.startsAt),
+      end: parseISO(block.endsAt),
+      resource: block,
+    }));
+  }, [schedule]);
+
+  const minTime = useMemo(() => new Date(0, 0, 0, 0, 0, 0), []);
+  const maxTime = useMemo(() => new Date(0, 0, 0, 23, 59, 59), []);
+  const scrollToTime = useMemo(() => new Date(0, 0, 0, 7, 0, 0), []);
 
   return (
     <div className="calendar-view">
       <h2 className="calendar-title">{format(date, 'EEEE, MMMM d, yyyy')}</h2>
-      
-      <div className="calendar-grid">
-        <div className="time-column">
-          {HOURS.map(hour => (
-            <div key={hour} className="time-slot">
-              {hour}:00
-            </div>
-          ))}
-        </div>
-        
-        <div className="events-column">
-          {HOURS.map(hour => (
-            <div key={hour} className="grid-line" />
-          ))}
-
-          {schedule.map((block, idx) => {
-            const start = parseISO(block.startsAt);
-            const end = parseISO(block.endsAt);
-            
-            const baseTime = set(dayStart, { hours: startHour, minutes: 0, seconds: 0, milliseconds: 0 });
-            const startOffset = differenceInMinutes(start, baseTime);
-            const duration = differenceInMinutes(end, start);
-            
-            if (startOffset < 0 || startOffset >= totalMinutes) return null;
-
-            const top = `${(startOffset / totalMinutes) * 100}%`;
-            const height = `${(duration / totalMinutes) * 100}%`;
-
-            return (
-              <div 
-                key={idx} 
-                className="event-block"
-                style={{ top, height }}
-              >
-                <div className="event-time">
-                  {format(start, 'HH:mm')} - {format(end, 'HH:mm')}
-                </div>
-                <div className="event-status">{block.status}</div>
-              </div>
-            );
-          })}
-        </div>
+      <div className="rbc-container">
+        <Calendar
+          localizer={localizer}
+          events={events}
+          defaultView={Views.DAY}
+          views={[Views.DAY, Views.WEEK]}
+          date={date}
+          toolbar={false}
+          min={minTime}
+          max={maxTime}
+          scrollToTime={scrollToTime}
+          style={{ height: '100%' }}
+        />
       </div>
     </div>
   );

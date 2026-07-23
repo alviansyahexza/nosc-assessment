@@ -1,85 +1,51 @@
+/* Container Card Layout */
 .calendar-view {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 640px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   padding: 24px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .calendar-title {
-  margin: 0 0 24px 0;
+  margin: 0 0 16px 0;
   font-size: 1.25rem;
   font-weight: 600;
   color: #1a202c;
-}
-
-.calendar-grid {
-  display: flex;
-  flex: 1;
-  position: relative;
-  overflow-y: auto;
-  min-height: 500px;
-}
-
-.time-column {
-  width: 60px;
   flex-shrink: 0;
-  border-right: 1px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
 }
 
-.time-slot {
-  height: 60px; /* 1 hour = 60px */
-  font-size: 0.875rem;
+.rbc-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Minimized React Big Calendar Theme Overrides */
+.rbc-calendar { font-family: inherit; }
+.rbc-time-view { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+.rbc-time-header { background: #f7fafc; border-bottom: 1px solid #e2e8f0; }
+
+.rbc-time-gutter .rbc-time-slot {
+  font-size: 0.8125rem;
   color: #718096;
   text-align: right;
-  padding-right: 12px;
-  transform: translateY(-8px);
+  padding-right: 8px;
 }
 
-.events-column {
-  flex: 1;
-  position: relative;
+.rbc-event {
+  background: #ebf4ff !important;
+  color: #2b6cb0 !important;
+  border: 1px solid #90cdf4 !important;
+  border-left: 4px solid #3182ce !important;
+  border-radius: 4px !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
 }
 
-.grid-line {
-  height: 60px;
-  border-bottom: 1px solid #e2e8f0;
-}
-.grid-line:last-child {
-  border-bottom: none;
-}
-
-.event-block {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  background-color: #ebf4ff;
-  border-left: 4px solid #3182ce;
-  border-radius: 4px;
-  padding: 4px 8px;
-  box-sizing: border-box;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.event-block:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-.event-time {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #2b6cb0;
-}
-
-.event-status {
-  font-size: 0.875rem;
-  color: #2a4365;
-  margin-top: 2px;
-}
+.rbc-day-slot .rbc-time-slot { border-top: 1px solid #edf2f7; }
+.rbc-current-time-indicator { background: #e53e3e; }
