@@ -11,7 +11,7 @@ const router = Router();
  *     tags: [Availability]
  *     parameters:
  *       - in: query
- *         name: service_id
+ *         name: serviceId
  *         required: true
  *         schema:
  *           type: integer
@@ -31,7 +31,7 @@ const router = Router();
  *           format: date-time
  *         description: Search end date-time
  *       - in: query
- *         name: doctor_ids
+ *         name: doctorIds
  *         required: false
  *         schema:
  *           type: string
@@ -49,11 +49,11 @@ const router = Router();
  *                   items:
  *                     type: object
  *                     properties:
- *                       doctor_id:
+ *                       doctorId:
  *                         type: integer
- *                       room_id:
+ *                       roomId:
  *                         type: integer
- *                       device_ids:
+ *                       deviceIds:
  *                         type: array
  *                         items:
  *                           type: integer
