@@ -1,4 +1,5 @@
 import { IAppointmentRepository, ServiceRequirements } from '../repositories/interfaces/IAppointmentRepository';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export class NotFoundError extends Error {
   constructor(message: string) {
@@ -14,6 +15,8 @@ export class ValidationError extends Error {
   }
 }
 
+const DEFAULT_TIMEZONE = 'Europe/Berlin';
+
 export interface BookingTimesResult {
   localDatePart: string;
   localTimePart: string;
@@ -27,18 +30,21 @@ export interface BookingTimesResult {
 
 export function computeBookingTimes(
   startsAt: string,
-  serviceReqs: Pick<ServiceRequirements, 'durationMin' | 'bufferBeforeMin' | 'bufferAfterMin'>
+  serviceReqs: Pick<ServiceRequirements, 'durationMin' | 'bufferBeforeMin' | 'bufferAfterMin'>,
+  timezone: string = DEFAULT_TIMEZONE
 ): BookingTimesResult {
   const requestedStart = new Date(startsAt);
   if (isNaN(requestedStart.getTime())) {
     throw new ValidationError('Invalid startsAt format');
   }
 
-  const [localDatePart, rest] = startsAt.split('T');
-  const localTimePart = rest.substring(0, 8);
+  const localTimePart = formatInTimeZone(requestedStart, timezone, 'HH:mm:ss');
+  const localDatePart = formatInTimeZone(requestedStart, timezone, 'yyyy-MM-dd');
 
-  const [year, month, day] = localDatePart.split('-').map(Number);
-  const weekday = new Date(year, month - 1, day).getDay();
+  // ISO day of week (1 = Mon, ..., 7 = Sun) mapped to 0 = Sun, 1 = Mon, ..., 6 = Sat
+  const dayOfWeekStr = formatInTimeZone(requestedStart, timezone, 'i');
+  const rawDay = parseInt(dayOfWeekStr, 10);
+  const weekday = rawDay === 7 ? 0 : rawDay;
 
   const totalDurationMin = serviceReqs.durationMin + serviceReqs.bufferBeforeMin + serviceReqs.bufferAfterMin;
   const epochStart = new Date(`1970-01-01T${localTimePart}Z`);
@@ -58,7 +64,7 @@ export function computeBookingTimes(
 }
 
 export class BookingService {
-  constructor(private readonly appointmentRepo: IAppointmentRepository) {}
+  constructor(private readonly appointmentRepo: IAppointmentRepository) { }
 
   async createBooking(
     tenantId: number,

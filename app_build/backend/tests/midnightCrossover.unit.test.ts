@@ -12,7 +12,7 @@ const DAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', '
 describe('computeBookingTimes — weekday extraction (midnight crossover)', () => {
 
   it('extracts Monday from "2025-09-15T00:30:00+02:00" despite UTC date being Sunday', () => {
-    const result = computeBookingTimes('2025-09-15T00:30:00+02:00', DUMMY_SERVICE);
+    const result = computeBookingTimes('2025-09-15T00:30:00+02:00', DUMMY_SERVICE, '+02:00');
     console.log(`weekday: ${DAY[result.weekday]} (${result.weekday})`);
     expect(result.weekday).toBe(1); // Monday
     expect(result.localDatePart).toBe('2025-09-15');
@@ -20,19 +20,19 @@ describe('computeBookingTimes — weekday extraction (midnight crossover)', () =
   });
 
   it('extracts Sunday from "2025-09-21T00:15:00+03:00" despite UTC date being Saturday', () => {
-    const result = computeBookingTimes('2025-09-21T00:15:00+03:00', DUMMY_SERVICE);
+    const result = computeBookingTimes('2025-09-21T00:15:00+03:00', DUMMY_SERVICE, '+03:00');
     console.log(`weekday: ${DAY[result.weekday]} (${result.weekday})`);
     expect(result.weekday).toBe(0); // Sunday
   });
 
   it('extracts Monday from "2025-09-15T23:30:00-05:00" despite UTC date being Tuesday', () => {
-    const result = computeBookingTimes('2025-09-15T23:30:00-05:00', DUMMY_SERVICE);
+    const result = computeBookingTimes('2025-09-15T23:30:00-05:00', DUMMY_SERVICE, '-05:00');
     console.log(`weekday: ${DAY[result.weekday]} (${result.weekday})`);
     expect(result.weekday).toBe(1); // Monday
   });
 
   it('extracts Monday from normal morning appointment "2025-09-15T09:30:00+02:00"', () => {
-    const result = computeBookingTimes('2025-09-15T09:30:00+02:00', DUMMY_SERVICE);
+    const result = computeBookingTimes('2025-09-15T09:30:00+02:00', DUMMY_SERVICE, '+02:00');
     expect(result.weekday).toBe(1); // Monday
   });
 

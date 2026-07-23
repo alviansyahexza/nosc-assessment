@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BookingService, NotFoundError, ValidationError } from '../src/services/bookingService';
+import { BookingService, NotFoundError, ValidationError, computeBookingTimes } from '../src/services/bookingService';
 import { IAppointmentRepository, CreateAppointmentDTO, ServiceRequirements } from '../src/repositories/interfaces/IAppointmentRepository';
 
 // Create a stub error to simulate the repo's ConflictError without depending on the exact class
@@ -83,5 +83,16 @@ describe('BookingService', () => {
     // Our mock specifically throws ConflictError for blockedStart = 10:00
     await expect(service.createBooking(1, 1, 1, 99, 1, '2026-10-10T10:05:00.000Z'))
       .rejects.toThrow(ConflictError);
+  });
+
+  describe('computeBookingTimes Timezone Awareness', () => {
+    it('correctly converts UTC ISO string (06:05:00Z) to Europe/Berlin local time (08:05:00)', () => {
+      const serviceReqs = { durationMin: 30, bufferBeforeMin: 5, bufferAfterMin: 10 };
+      const res = computeBookingTimes('2026-07-23T06:05:00.000Z', serviceReqs, 'Europe/Berlin');
+
+      expect(res.localTimePart).toBe('08:05:00');
+      expect(res.localDatePart).toBe('2026-07-23');
+      expect(res.weekday).toBe(4); // Thursday
+    });
   });
 });

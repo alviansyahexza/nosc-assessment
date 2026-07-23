@@ -254,5 +254,24 @@ describe('Booking API Integration Tests', () => {
       expect(new Date(matchingAppt.startsAt).toISOString()).toBe(requestedTime);
     });
   });
+
+  describe('Timezone-Aware Working Hours Validation', () => {
+    it('successfully books early morning shift slot starting at 06:05 UTC (08:05 Berlin time)', async () => {
+      // 06:05 UTC on Thursday Oct 15 2026 = 08:05 CEST (Doctor starts working at 08:00 CEST)
+      const createRes = await request(app)
+        .post('/api/appointments')
+        .set('X-Tenant-Id', '42')
+        .send({
+          patientId: 556,
+          doctorId: 101,
+          roomId: 12,
+          serviceId: 7,
+          startsAt: '2026-10-15T06:05:00.000Z'
+        });
+
+      expect(createRes.status).toBe(201);
+      expect(createRes.body).toHaveProperty('appointmentId');
+    });
+  });
 }
 );
