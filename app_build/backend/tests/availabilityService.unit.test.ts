@@ -89,4 +89,46 @@ describe('AvailabilityService (Sweep-Line Unit Tests)', () => {
       end: new Date('2026-10-15T17:00:00Z')
     });
   });
+
+  it('handles break ending exactly at shift closing time (b_end vs w_end at 17:00)', () => {
+    const working = [{ start: new Date('2026-10-15T08:00:00Z'), end: new Date('2026-10-15T17:00:00Z') }];
+    const blocked = [{ start: new Date('2026-10-15T12:00:00Z'), end: new Date('2026-10-15T17:00:00Z') }];
+
+    const freeIntervals = calculateFreeIntervals(working, blocked);
+
+    expect(freeIntervals).toEqual([
+      { start: new Date('2026-10-15T08:00:00Z'), end: new Date('2026-10-15T12:00:00Z') }
+    ]);
+  });
+
+  it('handles break starting exactly at shift opening time (b_start vs w_start at 08:00)', () => {
+    const working = [{ start: new Date('2026-10-15T08:00:00Z'), end: new Date('2026-10-15T17:00:00Z') }];
+    const blocked = [{ start: new Date('2026-10-15T08:00:00Z'), end: new Date('2026-10-15T10:00:00Z') }];
+
+    const freeIntervals = calculateFreeIntervals(working, blocked);
+
+    expect(freeIntervals).toEqual([
+      { start: new Date('2026-10-15T10:00:00Z'), end: new Date('2026-10-15T17:00:00Z') }
+    ]);
+  });
+
+  it('handles 4-way event collision on exact same timestamp (b_start, w_start, w_end, b_end at 12:00)', () => {
+    // Contiguous shifts 08:00-12:00 & 12:00-17:00
+    const working = [
+      { start: new Date('2026-10-15T08:00:00Z'), end: new Date('2026-10-15T12:00:00Z') },
+      { start: new Date('2026-10-15T12:00:00Z'), end: new Date('2026-10-15T17:00:00Z') },
+    ];
+    // Contiguous breaks 10:00-12:00 & 12:00-13:00
+    const blocked = [
+      { start: new Date('2026-10-15T10:00:00Z'), end: new Date('2026-10-15T12:00:00Z') },
+      { start: new Date('2026-10-15T12:00:00Z'), end: new Date('2026-10-15T13:00:00Z') },
+    ];
+
+    const freeIntervals = calculateFreeIntervals(working, blocked);
+
+    expect(freeIntervals).toEqual([
+      { start: new Date('2026-10-15T08:00:00Z'), end: new Date('2026-10-15T10:00:00Z') },
+      { start: new Date('2026-10-15T13:00:00Z'), end: new Date('2026-10-15T17:00:00Z') }
+    ]);
+  });
 });

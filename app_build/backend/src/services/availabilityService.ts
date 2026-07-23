@@ -15,6 +15,13 @@ interface Slot {
   end: string;
 }
 
+const EVENT_PRIORITY: Record<'b_start' | 'w_start' | 'w_end' | 'b_end', number> = {
+  b_start: 1, // Kunci Blokir (Keamanan Utama)
+  w_start: 2, // Buka Shift Kerja
+  w_end: 3,   // Tutup Shift Kerja
+  b_end: 4,   // Lepas Blokir
+};
+
 export function calculateFreeIntervals(workingIntervals: Interval[], blockedIntervals: Interval[]): Interval[] {
   const events: { time: number; type: 'w_start' | 'w_end' | 'b_start' | 'b_end' }[] = [];
 
@@ -27,14 +34,13 @@ export function calculateFreeIntervals(workingIntervals: Interval[], blockedInte
     events.push({ time: b.end.getTime(), type: 'b_end' });
   }
 
-  // Sort by time. If time is equal, process 'start' events before 'end' events to ensure safety.
+  // Strict deterministic tie-breaking order
   events.sort((a, b) => {
     if (a.time !== b.time) return a.time - b.time;
-    // Secondary sort to prioritize blocking over freeing if times overlap exactly
-    return a.type.localeCompare(b.type);
+    return EVENT_PRIORITY[a.type] - EVENT_PRIORITY[b.type];
   });
 
-  let isWorking = false;
+  let workingCount = 0;
   let blockCount = 0;
 
   let isFree = false;
@@ -43,12 +49,12 @@ export function calculateFreeIntervals(workingIntervals: Interval[], blockedInte
   const freeIntervals: Interval[] = [];
 
   for (const ev of events) {
-    if (ev.type === 'w_start') isWorking = true;
-    if (ev.type === 'w_end') isWorking = false;
+    if (ev.type === 'w_start') workingCount++;
+    if (ev.type === 'w_end') workingCount--;
     if (ev.type === 'b_start') blockCount++;
     if (ev.type === 'b_end') blockCount--;
 
-    const currentlyFree = isWorking && blockCount === 0;
+    const currentlyFree = workingCount > 0 && blockCount === 0;
 
     if (currentlyFree && !isFree) {
       // Transition to FREE

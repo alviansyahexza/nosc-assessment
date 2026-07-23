@@ -60,7 +60,7 @@
    - ✅ **DESIGN CHOICE CONFIRMED (Backend DB Resolution):** Device requirements (`device_ids[]`) are automatically resolved by backend from `service_resources` DB definitions as the Single Source of Truth, preventing client-side tampering or invalid device overrides.
 
 4. **Sweep-line Determinism**:
-   - *Recommendation:* Fix tie-breaking in `availabilityService.ts` to ensure logical consistency (ends before starts) when timestamps are identical.
+   - ✅ **FIXED (Issue #6):** Applied deterministic mirror-symmetric priority map (`b_start: 1, w_start: 2, w_end: 3, b_end: 4`) and `workingCount` tracking in `availabilityService.ts`, ensuring contiguous split shifts merge seamlessly and preventing state flickering. All 34 unit & integration tests pass 100%.
 
 5. **DevOps Artifacts**:
    - Add a root `docker-compose.yml` to launch Postgres + Backend + Frontend in a single command for evaluators.
