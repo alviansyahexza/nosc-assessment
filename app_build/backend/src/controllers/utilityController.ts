@@ -14,6 +14,19 @@ const scheduleQuerySchema = z.object({
   path: ["to"],
 });
 
+export const getTenantInfo = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.tenantId!;
+    const tenant = await utilityService.getTenantInfo(tenantId);
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+    res.status(200).json(tenant);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getServices = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.tenantId!;

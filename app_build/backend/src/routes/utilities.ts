@@ -1,7 +1,33 @@
 import { Router } from 'express';
-import { getServices, getDoctors, getDoctorSchedule } from '../controllers/utilityController';
+import { getServices, getDoctors, getDoctorSchedule, getTenantInfo } from '../controllers/utilityController';
 
 const router = Router();
+
+/**
+ * @swagger
+ * /api/tenant:
+ *   get:
+ *     summary: Retrieve tenant info including timezone
+ *     tags: [Utilities]
+ *     security:
+ *       - TenantIdAuth: []
+ *     responses:
+ *       200:
+ *         description: Tenant details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 name:
+ *                   type: string
+ *                 timezone:
+ *                   type: string
+ *                   example: 'Europe/Berlin'
+ */
+router.get('/tenant', getTenantInfo);
 
 /**
  * @swagger

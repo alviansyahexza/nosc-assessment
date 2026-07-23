@@ -3,6 +3,10 @@ import { IUtilityRepository } from '../repositories/interfaces/IUtilityRepositor
 export class UtilityService {
   constructor(private readonly utilityRepo: IUtilityRepository) {}
 
+  async getTenantInfo(tenantId: number) {
+    return this.utilityRepo.getTenantInfo(tenantId);
+  }
+
   async getServices(tenantId: number) {
     return this.utilityRepo.getServices(tenantId);
   }

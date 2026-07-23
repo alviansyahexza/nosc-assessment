@@ -15,7 +15,14 @@ export interface ScheduleBlock {
   status: 'Busy';
 }
 
+export interface TenantInfo {
+  id: number;
+  name: string;
+  timezone: string;
+}
+
 export interface IUtilityRepository {
+  getTenantInfo(tenantId: number): Promise<TenantInfo | null>;
   getServices(tenantId: number): Promise<ServiceInfo[]>;
   getDoctors(tenantId: number): Promise<DoctorInfo[]>;
   getDoctorSchedule(tenantId: number, doctorId: number, from: Date, to: Date): Promise<ScheduleBlock[]>;
