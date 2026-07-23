@@ -113,6 +113,9 @@
 2. **Device Resolution Strategy**:
    - ✅ **DESIGN CHOICE CONFIRMED (Backend DB Resolution):** Device requirements (`device_ids[]`) are automatically resolved by backend from `service_resources` DB definitions as the Single Source of Truth, preventing client-side tampering or invalid device overrides.
 
+3. **Static Assessment Tenant Scope (`TENANT_ID = 42`)**:
+   - ✅ **DESIGN CHOICE CONFIRMED:** `TENANT_ID = '42'` is statically configured in `client.ts` to streamline evaluator testing against the seed dataset. Patients, doctors, services, and working hours are fetched dynamically per tenant from the database via `/api/patients`, `/api/doctors`, `/api/services`, and `/api/tenant`.
+
 ---
 
 ## ⚠️ Known Limitations & Future Improvements
@@ -120,16 +123,13 @@
 1. **DevOps Artifacts**:
    - Add a root `docker-compose.yml` to launch Postgres + Backend + Frontend in a single command for evaluators.
 
-2. **Frontend Hardcoded Values**:
-   - `TENANT_ID = '42'` and `patientId: 1` are hardcoded in `client.ts` / `BookingFlow.tsx`. Acceptable for assessment scope; production would use environment variables and auth context.
-
-3. **Frontend Responsive Design**:
+2. **Frontend Responsive Design**:
    - No `@media` breakpoints for mobile/tablet viewports. Desktop-first design is acceptable for assessment scope.
 
-4. **Frontend Error Boundaries**:
+3. **Frontend Error Boundaries**:
    - No React Error Boundaries. Silent `console.error` on API failures in initial data fetches. Acceptable for assessment scope; production would add toast notifications and error boundaries.
 
-5. **Idempotency**:
+4. **Idempotency**:
    - `Idempotency-Key` header not implemented (listed as optional in README). DB-level exclusion constraints prevent duplicate bookings at the data layer.
 
 ---
