@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format, addDays, startOfDay, formatISO } from 'date-fns';
 import { fetchApi } from '../api/client';
-import type { Service, Doctor, Slot } from '../api/types';
+import type { Service, Doctor, Patient, Slot } from '../api/types';
 import './BookingFlow.css';
 
 interface BookingFlowProps {
@@ -12,9 +12,11 @@ interface BookingFlowProps {
 export function BookingFlow({ onDoctorSelect, onBookingComplete }: BookingFlowProps) {
   const [services, setServices] = useState<Service[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   
   const [selectedService, setSelectedService] = useState<number | ''>('');
   const [selectedDoctor, setSelectedDoctor] = useState<number | ''>('');
+  const [selectedPatient, setSelectedPatient] = useState<number | ''>('');
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   
   const [availableSlots, setAvailableSlots] = useState<Slot[]>([]);
@@ -24,6 +26,12 @@ export function BookingFlow({ onDoctorSelect, onBookingComplete }: BookingFlowPr
   useEffect(() => {
     fetchApi('/services').then(data => setServices(data.services)).catch(console.error);
     fetchApi('/doctors').then(data => setDoctors(data.doctors)).catch(console.error);
+    fetchApi('/patients').then(data => {
+      setPatients(data.patients || []);
+      if (data.patients && data.patients.length > 0) {
+        setSelectedPatient(data.patients[0].id);
+      }
+    }).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -71,7 +79,7 @@ export function BookingFlow({ onDoctorSelect, onBookingComplete }: BookingFlowPr
       await fetchApi('/appointments', {
         method: 'POST',
         body: JSON.stringify({
-          patientId: 1, // Hardcoded for now
+          patientId: Number(selectedPatient),
           serviceId: Number(selectedService),
           doctorId: slot.doctorId,
           roomId: slot.roomId,
@@ -96,6 +104,20 @@ export function BookingFlow({ onDoctorSelect, onBookingComplete }: BookingFlowPr
       <h2 className="booking-title">New Booking</h2>
       
       <form onSubmit={handleSearch} className="booking-form">
+        <div className="form-group">
+          <label>Patient *</label>
+          <select 
+            value={selectedPatient} 
+            onChange={e => setSelectedPatient(e.target.value ? Number(e.target.value) : '')}
+            required
+          >
+            <option value="">Select a patient...</option>
+            {patients.map(p => (
+              <option key={p.id} value={p.id}>{p.name} {p.email ? `(${p.email})` : ''}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="form-group">
           <label>Service *</label>
           <select 

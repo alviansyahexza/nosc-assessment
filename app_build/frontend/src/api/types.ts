@@ -9,6 +9,12 @@ export interface Doctor {
   name: string;
 }
 
+export interface Patient {
+  id: number;
+  name: string;
+  email?: string;
+}
+
 export interface ScheduleBlock {
   startsAt: string;
   endsAt: string;
