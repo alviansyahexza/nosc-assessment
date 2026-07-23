@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { format, addDays, startOfDay, formatISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { fetchApi } from '../api/client';
 import type { Service, Doctor, Patient, Slot } from '../api/types';
 import './BookingFlow.css';
 
 interface BookingFlowProps {
+  timezone?: string;
   onDoctorSelect: (doctorId: number | null, date: Date) => void;
   onBookingComplete: () => void;
 }
 
-export function BookingFlow({ onDoctorSelect, onBookingComplete }: BookingFlowProps) {
+export function BookingFlow({ timezone = 'Europe/Berlin', onDoctorSelect, onBookingComplete }: BookingFlowProps) {
   const [services, setServices] = useState<Service[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -167,14 +169,14 @@ export function BookingFlow({ onDoctorSelect, onBookingComplete }: BookingFlowPr
           <h3>Available Slots</h3>
           <div className="slots-list">
             {availableSlots.map((slot, idx) => {
-              const start = new Date(slot.start);
-              const end = new Date(slot.end);
+              const startStr = formatInTimeZone(new Date(slot.start), timezone, 'HH:mm');
+              const endStr = formatInTimeZone(new Date(slot.end), timezone, 'HH:mm');
               const doctor = doctors.find(d => d.id === slot.doctorId);
               
               return (
                 <div key={idx} className="slot-card">
                   <div className="slot-info">
-                    <span className="slot-time">{format(start, 'HH:mm')} - {format(end, 'HH:mm')}</span>
+                    <span className="slot-time">{startStr} - {endStr}</span>
                     <span className="slot-doc">{doctor ? doctor.name : `Doctor #${slot.doctorId}`}</span>
                   </div>
                   <button onClick={() => handleBook(slot)} className="btn-book">Book Now</button>

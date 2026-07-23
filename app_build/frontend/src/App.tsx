@@ -54,6 +54,8 @@ function App() {
     loadSchedule(selectedDoctorId, selectedDate);
   }, [loadSchedule, selectedDoctorId, selectedDate]);
 
+  const timezone = tenantInfo?.timezone || 'Europe/Berlin';
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -68,6 +70,7 @@ function App() {
       <main className="main-content">
         <div className="left-panel">
           <BookingFlow
+            timezone={timezone}
             onDoctorSelect={handleDoctorSelect}
             onBookingComplete={handleBookingComplete}
           />
@@ -75,7 +78,7 @@ function App() {
 
         <div className="right-panel">
           {selectedDoctorId ? (
-            <CalendarView date={selectedDate} schedule={schedule} />
+            <CalendarView date={selectedDate} schedule={schedule} timezone={timezone} />
           ) : (
             <div className="empty-calendar">
               <p>Select a doctor in the booking wizard to view their schedule for the selected day.</p>
