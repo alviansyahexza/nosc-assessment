@@ -11,6 +11,7 @@ class MockAvailabilityRepo implements IAvailabilityRepository {
       bufferAfterMin: 10,
       requiredRoomId: 100,
       requiredDeviceIds: [200],
+      timezone: 'Europe/Berlin',
       validDoctorIds: [1],
       allRoomIds: [100],
       workingHours: [

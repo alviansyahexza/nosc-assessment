@@ -5,6 +5,7 @@ export interface AvailabilityResourceData {
   bufferAfterMin: number;
   requiredRoomId: number | null;
   requiredDeviceIds: number[];
+  timezone: string;
 
   // All valid doctors for this service (if client didn't specify)
   validDoctorIds: number[];

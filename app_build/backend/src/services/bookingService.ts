@@ -81,7 +81,7 @@ export class BookingService {
     }
 
     const finalRoomId = serviceReqs.requiredRoomId ?? roomId;
-    const times = computeBookingTimes(startsAt, serviceReqs);
+    const times = computeBookingTimes(startsAt, serviceReqs, serviceReqs.timezone);
 
     return this.appointmentRepo.createBooking({
       tenantId,

@@ -123,8 +123,8 @@ export class AvailabilityService {
     // Total required time
     const totalDuration = data.durationMin + data.bufferBeforeMin + data.bufferAfterMin;
 
-    // Timezone - assuming Europe/Berlin based on README
-    const TIMEZONE = 'Europe/Berlin';
+    // Timezone from tenant DB record
+    const TIMEZONE = data.timezone || 'Europe/Berlin';
 
     // 1. Generate working hour intervals in UTC for the requested date range
     const doctorWorkingHours: Record<number, Interval[]> = {};
@@ -134,7 +134,9 @@ export class AvailabilityService {
 
     // A simple loop over days in the range to instantiate working hours
     for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
-      const weekday = d.getDay(); // 0 = Sunday, 1 = Monday
+      const dayStr = formatInTimeZone(d, TIMEZONE, 'i');
+      const rawDay = parseInt(dayStr, 10);
+      const weekday = rawDay === 7 ? 0 : rawDay;
       const dateString = formatInTimeZone(d, TIMEZONE, 'yyyy-MM-dd');
 
       for (const wh of data.workingHours) {

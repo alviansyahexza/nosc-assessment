@@ -20,6 +20,7 @@ export interface ServiceRequirements {
   bufferAfterMin: number;
   requiredRoomId: number | null;
   requiredDeviceIds: number[];
+  timezone: string;
 }
 
 export interface IAppointmentRepository {

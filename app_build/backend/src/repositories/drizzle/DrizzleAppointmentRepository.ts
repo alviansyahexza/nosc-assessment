@@ -1,6 +1,6 @@
 import { eq, and, lte, gte, lt, gt, or, inArray } from 'drizzle-orm';
 import { db } from '../../db';
-import { appointments, appointmentDevices, services, serviceResources, workingHours, breaks } from '../../db/schema';
+import { tenants, appointments, appointmentDevices, services, serviceResources, workingHours, breaks } from '../../db/schema';
 import { IAppointmentRepository, CreateAppointmentDTO, ServiceRequirements } from '../interfaces/IAppointmentRepository';
 
 export class ConflictError extends Error {
@@ -13,16 +13,20 @@ export class ConflictError extends Error {
 export class DrizzleAppointmentRepository implements IAppointmentRepository {
   
   async getServiceRequirements(tenantId: number, serviceId: number): Promise<ServiceRequirements | null> {
-    const serviceRows = await db.select().from(services)
-      .where(and(eq(services.tenantId, tenantId), eq(services.id, serviceId)))
-      .limit(1);
+    const [tenantRows, serviceRows, resources] = await Promise.all([
+      db.select().from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .limit(1),
+      db.select().from(services)
+        .where(and(eq(services.tenantId, tenantId), eq(services.id, serviceId)))
+        .limit(1),
+      db.select().from(serviceResources)
+        .where(and(eq(serviceResources.tenantId, tenantId), eq(serviceResources.serviceId, serviceId)))
+    ]);
 
     if (serviceRows.length === 0) return null;
     const svc = serviceRows[0];
-
-    // Get mapped resources
-    const resources = await db.select().from(serviceResources)
-      .where(and(eq(serviceResources.tenantId, tenantId), eq(serviceResources.serviceId, serviceId)));
+    const tenantTz = tenantRows[0]?.timezone || 'Europe/Berlin';
 
     let requiredRoomId: number | null = null;
     const requiredDeviceIds: number[] = [];
@@ -37,7 +41,8 @@ export class DrizzleAppointmentRepository implements IAppointmentRepository {
       bufferBeforeMin: svc.bufferBeforeMin || 0,
       bufferAfterMin: svc.bufferAfterMin || 0,
       requiredRoomId,
-      requiredDeviceIds
+      requiredDeviceIds,
+      timezone: tenantTz
     };
   }
 

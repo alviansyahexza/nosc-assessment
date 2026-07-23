@@ -2,7 +2,7 @@ import { db } from '../../db';
 import { and, eq, gte, inArray, lt } from 'drizzle-orm';
 import { NotFoundError } from '../../services/bookingService';
 import {
-  services, serviceResources, doctors, rooms,
+  tenants, services, serviceResources, doctors, rooms,
   workingHours, breaks, appointments, appointmentDevices
 } from '../../db/schema';
 import { IAvailabilityRepository, AvailabilityResourceData } from '../interfaces/IAvailabilityRepository';
@@ -16,8 +16,11 @@ export class DrizzleAvailabilityRepository implements IAvailabilityRepository {
     doctorIds?: number[]
   ): Promise<AvailabilityResourceData> {
 
-    // 1. Fetch Service Info & Service Resources concurrently
-    const [serviceInfo, sResources] = await Promise.all([
+    // 1. Fetch Tenant Info, Service Info & Service Resources concurrently
+    const [tenantInfo, serviceInfo, sResources] = await Promise.all([
+      db.select().from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .limit(1),
       db.select().from(services)
         .where(and(eq(services.id, serviceId), eq(services.tenantId, tenantId)))
         .limit(1),
@@ -29,6 +32,7 @@ export class DrizzleAvailabilityRepository implements IAvailabilityRepository {
       throw new NotFoundError('Service not found');
     }
     const svc = serviceInfo[0];
+    const tenantTz = tenantInfo[0]?.timezone || 'Europe/Berlin';
     
     let requiredRoomId: number | null = null;
     const requiredDeviceIds: number[] = [];
@@ -126,6 +130,7 @@ export class DrizzleAvailabilityRepository implements IAvailabilityRepository {
       bufferAfterMin: svc.bufferAfterMin || 0,
       requiredRoomId,
       requiredDeviceIds,
+      timezone: tenantTz,
       validDoctorIds,
       allRoomIds,
       workingHours: wHours.map(w => ({

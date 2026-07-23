@@ -18,7 +18,8 @@ class MockAppointmentRepository implements IAppointmentRepository {
         bufferBeforeMin: 5,
         bufferAfterMin: 10,
         requiredRoomId: 100,
-        requiredDeviceIds: [200]
+        requiredDeviceIds: [200],
+        timezone: 'Europe/Berlin'
       };
     }
     if (serviceId === 2) {
@@ -27,7 +28,8 @@ class MockAppointmentRepository implements IAppointmentRepository {
         bufferBeforeMin: 0,
         bufferAfterMin: 0,
         requiredRoomId: null, // Simulate no room mapped
-        requiredDeviceIds: []
+        requiredDeviceIds: [],
+        timezone: 'Europe/Berlin'
       };
     }
     return null;
