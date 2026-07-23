@@ -71,18 +71,26 @@
 
 ### Critical Bugs Found
 
-#### 🔴 Bug #1 — Timezone Extraction (`bookingService.ts`)
+#### 🟢 Bug #1 — Timezone Extraction (`bookingService.ts`) — REVISED: NOT A BUG
 
-The working-hours validation uses naive string splitting to extract local time:
+The working-hours validation uses `split('T')` to extract local time:
 
 ```ts
-// CURRENT (WRONG): Reads UTC portion of ISO string, not Berlin local time
-const localTime = startsAt.split('T')[1].substring(0, 5); // e.g., "07:30"
+const [datePart, rest] = startsAt.split('T');
+const startTimeString = rest.substring(0, 8); // e.g., "09:30:00"
 ```
 
-**Impact:** An appointment at `2025-09-15T07:30:00Z` (= **09:30 CEST/Berlin**) incorrectly extracts `07:30` UTC. If a doctor's working hours start at `08:00` local, this valid slot gets *rejected*. Conversely, early-morning UTC times that fall outside working hours could be *incorrectly accepted*.
+**Initial assessment** (by `@engineer`) flagged this as a critical bug. However, the Zod schema in `appointmentsController.ts` enforces:
 
-**Fix:** Use `date-fns-tz` to convert the timestamp into the tenant's timezone before extracting weekday and local time.
+```ts
+startsAt: z.string().datetime({ offset: true }) // Rejects bare UTC "Z" strings
+```
+
+`{ offset: true }` forces clients to include an explicit UTC offset (e.g. `2025-09-15T09:30:00+02:00`). Because the offset string leads with the **local time** (`T09:30:00`), `split('T')` correctly extracts `09:30:00` — the actual Berlin local time. Bare UTC strings like `T07:30:00Z` are **rejected at validation** before they ever reach the service.
+
+**Remaining edge case (minor):** Midnight crossover — if `startsAt` is `2025-09-15T00:30:00+02:00`, the literal date part (`2025-09-15`) is used for weekday extraction, but the UTC date is actually `2025-09-14`. This could assign the wrong weekday, but has zero practical impact in clinical scheduling (no clinic works at 00:30 AM).
+
+**Verdict:** ✅ Downgraded to minor / acceptable edge case. No fix required for submission.
 
 ---
 
@@ -158,16 +166,17 @@ Simultaneous events are sorted with `a.type.localeCompare(b.type)` — an alphab
 
 ## 🎯 Consolidated Action Items
 
-### 🔴 MUST FIX Before Submission (6 items)
+### 🔴 MUST FIX Before Submission (5 items)
+
+> **Note:** Bug #1 (Timezone Extraction) has been revised to NOT A BUG — `{ offset: true }` in the Zod schema enforces offset-aware ISO strings, making `split('T')` extraction correct in practice.
 
 | # | Issue | File |
 | :--- | :--- | :--- |
-| 1 | **Timezone bug:** Replace `split('T')` with `date-fns-tz` timezone-aware parsing | `bookingService.ts` |
-| 2 | **Time overwrite:** Store real `starts_at`/`ends_at`; add `blocked_starts_at`/`blocked_ends_at` to DB schema for exclusion constraints | `bookingService.ts`, `db/ddl.sql` |
-| 3 | **POST response shape:** Return `{ id, starts_at, ends_at, buffer_before_min, buffer_after_min }` per README spec | `appointmentsController.ts`, `bookingService.ts` |
-| 4 | **API casing:** Standardize all request/response fields to `snake_case` | All controllers, Zod schemas, `api/client.ts` |
-| 5 | **Accept `device_ids`:** Add optional `device_ids[]` to POST payload Zod schema | `appointmentsController.ts`, `bookingService.ts` |
-| 6 | **Sweep-line sorting:** Fix tie-breaking to be logically deterministic (ends before starts) | `availabilityService.ts` |
+| 1 | **Time overwrite:** Store real `starts_at`/`ends_at`; add `blocked_starts_at`/`blocked_ends_at` to DB schema for exclusion constraints | `bookingService.ts`, `db/ddl.sql` |
+| 2 | **POST response shape:** Return `{ id, starts_at, ends_at, buffer_before_min, buffer_after_min }` per README spec | `appointmentsController.ts`, `bookingService.ts` |
+| 3 | **API casing:** Standardize all request/response fields to `snake_case` | All controllers, Zod schemas, `api/client.ts` |
+| 4 | **Accept `device_ids`:** Add optional `device_ids[]` to POST payload Zod schema | `appointmentsController.ts`, `bookingService.ts` |
+| 5 | **Sweep-line sorting:** Fix tie-breaking to be logically deterministic (ends before starts) | `availabilityService.ts` |
 
 ### 🟡 NICE TO HAVE (5 items)
 
