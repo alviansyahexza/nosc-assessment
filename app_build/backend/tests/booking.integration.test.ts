@@ -115,8 +115,8 @@ describe('Booking API Integration Tests', () => {
         patientId: 556,
         doctorId: 101,
         roomId: 12,
-        serviceId: 7, // Advanced Ultrasound (duration: 30, bufferBefore: 5, bufferAfter: 10) -> total 45 mins. Blocked: 11:55 to 12:40
-        startsAt: '2026-10-16T12:00:00.000Z'
+        serviceId: 7, // Advanced Ultrasound (duration: 30, bufferBefore: 5, bufferAfter: 10) -> total 45 mins. Blocked: 09:55 to 10:40
+        startsAt: '2026-10-16T10:00:00.000Z'
       };
 
       const payload2 = {
@@ -124,9 +124,9 @@ describe('Booking API Integration Tests', () => {
         doctorId: 101,
         roomId: 12,
         serviceId: 7,
-        // For payload2, Blocked Start must be >= 12:40. Since bufferBefore is 5, startsAt must be 12:45.
-        // Blocked will be 12:40 to 13:25.
-        startsAt: '2026-10-16T12:45:00.000Z' 
+        // For payload2, Blocked Start must be >= 10:40. Since bufferBefore is 5, startsAt must be 10:45.
+        // Blocked will be 10:40 to 11:25.
+        startsAt: '2026-10-16T10:45:00.000Z' 
       };
 
       const res1 = await request(app)
@@ -220,6 +220,38 @@ describe('Booking API Integration Tests', () => {
       
       expect(response.status).toBe(409);
       expect(response.body.error).toContain("scheduled break");
+    });
+  });
+
+  describe('Core Patient Consultation Time Preservation', () => {
+    it('returns exact requested patient consultation start time on doctor calendar schedule', async () => {
+      // 1. Create a booking for 14:00 UTC (Thursday Oct 15 2026)
+      const requestedTime = '2026-10-15T14:00:00.000Z';
+      const createRes = await request(app)
+        .post('/api/appointments')
+        .set('X-Tenant-Id', '42')
+        .send({
+          patientId: 556,
+          doctorId: 101,
+          roomId: 12,
+          serviceId: 7,
+          startsAt: requestedTime
+        });
+
+      expect(createRes.status).toBe(201);
+
+      // 2. Fetch doctor's schedule for that day
+      const scheduleRes = await request(app)
+        .get('/api/doctors/101/schedule?from=2026-10-15T00:00:00%2B00:00&to=2026-10-16T00:00:00%2B00:00')
+        .set('X-Tenant-Id', '42');
+
+      expect(scheduleRes.status).toBe(200);
+      expect(scheduleRes.body.schedule.length).toBeGreaterThan(0);
+
+      // 3. Verify that the schedule returns 09:30 (core start), NOT 09:25 (blocked start)
+      const matchingAppt = scheduleRes.body.schedule.find((s: any) => new Date(s.startsAt).toISOString() === requestedTime);
+      expect(matchingAppt).toBeDefined();
+      expect(new Date(matchingAppt.startsAt).toISOString()).toBe(requestedTime);
     });
   });
 }

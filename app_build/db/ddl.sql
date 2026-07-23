@@ -93,6 +93,8 @@ CREATE TABLE appointments (
     service_id INT NOT NULL,
     starts_at TIMESTAMPTZ NOT NULL,
     ends_at TIMESTAMPTZ NOT NULL,
+    blocked_starts_at TIMESTAMPTZ,
+    blocked_ends_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     
     -- Composite Foreign Keys to strictly enforce tenant isolation
@@ -110,14 +112,14 @@ ALTER TABLE appointments ADD CONSTRAINT no_overlapping_doctor_appts
 EXCLUDE USING gist (
     tenant_id WITH =,
     doctor_id WITH =,
-    tstzrange(starts_at, ends_at) WITH &&
+    tstzrange(COALESCE(blocked_starts_at, starts_at), COALESCE(blocked_ends_at, ends_at)) WITH &&
 );
 
 ALTER TABLE appointments ADD CONSTRAINT no_overlapping_room_appts
 EXCLUDE USING gist (
     tenant_id WITH =,
     room_id WITH =,
-    tstzrange(starts_at, ends_at) WITH &&
+    tstzrange(COALESCE(blocked_starts_at, starts_at), COALESCE(blocked_ends_at, ends_at)) WITH &&
 );
 
 -- Join table for devices, also featuring EXCLUDE constraints
@@ -127,6 +129,8 @@ CREATE TABLE appointment_devices (
     tenant_id INT NOT NULL,
     starts_at TIMESTAMPTZ NOT NULL,
     ends_at TIMESTAMPTZ NOT NULL,
+    blocked_starts_at TIMESTAMPTZ,
+    blocked_ends_at TIMESTAMPTZ,
     
     PRIMARY KEY (appointment_id, device_id),
     FOREIGN KEY (tenant_id, appointment_id) REFERENCES appointments(tenant_id, id) ON DELETE CASCADE,
@@ -136,7 +140,7 @@ CREATE TABLE appointment_devices (
     EXCLUDE USING gist (
         tenant_id WITH =,
         device_id WITH =,
-        tstzrange(starts_at, ends_at) WITH &&
+        tstzrange(COALESCE(blocked_starts_at, starts_at), COALESCE(blocked_ends_at, ends_at)) WITH &&
     )
 );
 

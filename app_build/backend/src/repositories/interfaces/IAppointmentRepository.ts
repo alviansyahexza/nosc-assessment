@@ -6,6 +6,8 @@ export interface CreateAppointmentDTO {
   serviceId: number;
   startsAt: Date;
   endsAt: Date;
+  blockedStartsAt: Date;
+  blockedEndsAt: Date;
   deviceIds: number[];
   requestedWeekday: number;
   requestedLocalStartTime: string;

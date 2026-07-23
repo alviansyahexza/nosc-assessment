@@ -19,6 +19,8 @@ export interface BookingTimesResult {
   localTimePart: string;
   weekday: number;
   endTimeString: string;
+  coreStart: Date;
+  coreEnd: Date;
   blockedStart: Date;
   blockedEnd: Date;
 }
@@ -44,12 +46,15 @@ export function computeBookingTimes(
     .toISOString()
     .substring(11, 19);
 
+  const coreStart = requestedStart;
+  const coreEnd = new Date(requestedStart.getTime() + serviceReqs.durationMin * 60_000);
+
   const blockedStart = new Date(requestedStart.getTime() - serviceReqs.bufferBeforeMin * 60_000);
   const blockedEnd = new Date(
     requestedStart.getTime() + (serviceReqs.durationMin + serviceReqs.bufferAfterMin) * 60_000
   );
 
-  return { localDatePart, localTimePart, weekday, endTimeString, blockedStart, blockedEnd };
+  return { localDatePart, localTimePart, weekday, endTimeString, coreStart, coreEnd, blockedStart, blockedEnd };
 }
 
 export class BookingService {
@@ -78,8 +83,10 @@ export class BookingService {
       patientId,
       roomId: finalRoomId,
       serviceId,
-      startsAt: times.blockedStart,
-      endsAt: times.blockedEnd,
+      startsAt: times.coreStart,
+      endsAt: times.coreEnd,
+      blockedStartsAt: times.blockedStart,
+      blockedEndsAt: times.blockedEnd,
       deviceIds: serviceReqs.requiredDeviceIds,
       requestedWeekday: times.weekday,
       requestedLocalStartTime: times.localTimePart,

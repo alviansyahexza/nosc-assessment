@@ -83,8 +83,8 @@ export class DrizzleAppointmentRepository implements IAppointmentRepository {
           .where(
             and(
               eq(breaks.tenantId, data.tenantId),
-              lt(breaks.startsAt, data.endsAt),
-              gt(breaks.endsAt, data.startsAt),
+              lt(breaks.startsAt, data.blockedEndsAt),
+              gt(breaks.endsAt, data.blockedStartsAt),
               or(...breakConditions)
             )
           )
@@ -103,6 +103,8 @@ export class DrizzleAppointmentRepository implements IAppointmentRepository {
           serviceId: data.serviceId,
           startsAt: data.startsAt,
           endsAt: data.endsAt,
+          blockedStartsAt: data.blockedStartsAt,
+          blockedEndsAt: data.blockedEndsAt,
         }).returning({ id: appointments.id });
 
         // Insert required devices
@@ -113,6 +115,8 @@ export class DrizzleAppointmentRepository implements IAppointmentRepository {
             tenantId: data.tenantId,
             startsAt: data.startsAt,
             endsAt: data.endsAt,
+            blockedStartsAt: data.blockedStartsAt,
+            blockedEndsAt: data.blockedEndsAt,
           }));
           await tx.insert(appointmentDevices).values(deviceInserts);
         }

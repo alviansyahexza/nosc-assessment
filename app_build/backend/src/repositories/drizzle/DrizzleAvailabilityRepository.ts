@@ -101,7 +101,9 @@ export class DrizzleAvailabilityRepository implements IAvailabilityRepository {
         appointmentId: appointmentDevices.appointmentId,
         deviceId: appointmentDevices.deviceId,
         startsAt: appointments.startsAt,
-        endsAt: appointments.endsAt
+        endsAt: appointments.endsAt,
+        blockedStartsAt: appointments.blockedStartsAt,
+        blockedEndsAt: appointments.blockedEndsAt
       })
         .from(appointmentDevices)
         .innerJoin(appointments, eq(appointments.id, appointmentDevices.appointmentId))
@@ -142,10 +144,15 @@ export class DrizzleAvailabilityRepository implements IAvailabilityRepository {
         id: a.id,
         doctorId: a.doctorId,
         roomId: a.roomId,
-        startsAt: a.startsAt,
-        endsAt: a.endsAt
+        startsAt: a.blockedStartsAt || a.startsAt,
+        endsAt: a.blockedEndsAt || a.endsAt
       })),
-      appointmentDevices: apptDevices
+      appointmentDevices: apptDevices.map(ad => ({
+        appointmentId: ad.appointmentId,
+        deviceId: ad.deviceId,
+        startsAt: ad.blockedStartsAt || ad.startsAt,
+        endsAt: ad.blockedEndsAt || ad.endsAt
+      }))
     };
   }
 }

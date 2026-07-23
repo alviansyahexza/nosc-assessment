@@ -75,6 +75,8 @@ export const appointments = pgTable('appointments', {
   serviceId: integer('service_id').notNull(),
   startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
   endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+  blockedStartsAt: timestamp('blocked_starts_at', { withTimezone: true }),
+  blockedEndsAt: timestamp('blocked_ends_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
@@ -84,4 +86,6 @@ export const appointmentDevices = pgTable('appointment_devices', {
   tenantId: integer('tenant_id').notNull(),
   startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
   endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+  blockedStartsAt: timestamp('blocked_starts_at', { withTimezone: true }),
+  blockedEndsAt: timestamp('blocked_ends_at', { withTimezone: true }),
 });
