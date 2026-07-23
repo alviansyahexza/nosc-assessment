@@ -1,4 +1,4 @@
-import { IAppointmentRepository } from '../repositories/interfaces/IAppointmentRepository';
+import { IAppointmentRepository, ServiceRequirements } from '../repositories/interfaces/IAppointmentRepository';
 
 export class NotFoundError extends Error {
   constructor(message: string) {
@@ -14,59 +14,77 @@ export class ValidationError extends Error {
   }
 }
 
-export class BookingService {
-  constructor(private readonly appointmentRepo: IAppointmentRepository) { }
+export interface BookingTimesResult {
+  localDatePart: string;
+  localTimePart: string;
+  weekday: number;
+  endTimeString: string;
+  blockedStart: Date;
+  blockedEnd: Date;
+}
 
-  async createBooking(tenantId: number, patientId: number, doctorId: number, roomId: number, serviceId: number, startsAt: string) {
+export function computeBookingTimes(
+  startsAt: string,
+  serviceReqs: Pick<ServiceRequirements, 'durationMin' | 'bufferBeforeMin' | 'bufferAfterMin'>
+): BookingTimesResult {
+  const requestedStart = new Date(startsAt);
+  if (isNaN(requestedStart.getTime())) {
+    throw new ValidationError('Invalid startsAt format');
+  }
+
+  const [localDatePart, rest] = startsAt.split('T');
+  const localTimePart = rest.substring(0, 8);
+
+  const [year, month, day] = localDatePart.split('-').map(Number);
+  const weekday = new Date(year, month - 1, day).getDay();
+
+  const totalDurationMin = serviceReqs.durationMin + serviceReqs.bufferBeforeMin + serviceReqs.bufferAfterMin;
+  const epochStart = new Date(`1970-01-01T${localTimePart}Z`);
+  const endTimeString = new Date(epochStart.getTime() + totalDurationMin * 60_000)
+    .toISOString()
+    .substring(11, 19);
+
+  const blockedStart = new Date(requestedStart.getTime() - serviceReqs.bufferBeforeMin * 60_000);
+  const blockedEnd = new Date(
+    requestedStart.getTime() + (serviceReqs.durationMin + serviceReqs.bufferAfterMin) * 60_000
+  );
+
+  return { localDatePart, localTimePart, weekday, endTimeString, blockedStart, blockedEnd };
+}
+
+export class BookingService {
+  constructor(private readonly appointmentRepo: IAppointmentRepository) {}
+
+  async createBooking(
+    tenantId: number,
+    patientId: number,
+    doctorId: number,
+    roomId: number,
+    serviceId: number,
+    startsAt: string
+  ) {
     const serviceReqs = await this.appointmentRepo.getServiceRequirements(tenantId, serviceId);
 
     if (!serviceReqs) {
       throw new NotFoundError('Service not found or not mapped to this tenant');
     }
 
-    // If the service dictates a specific room, use it. Otherwise, use the user-selected room.
-    const finalRoomId = serviceReqs.requiredRoomId !== null ? serviceReqs.requiredRoomId : roomId;
+    const finalRoomId = serviceReqs.requiredRoomId ?? roomId;
+    const times = computeBookingTimes(startsAt, serviceReqs);
 
-    const requestedStart = new Date(startsAt);
-    if (isNaN(requestedStart.getTime())) {
-      throw new ValidationError('Invalid startsAt format');
-    }
-
-    // 1. Timezone-Blinded Extraction from `startsAt`
-    const [datePart, rest] = startsAt.split('T');
-    const startTimeString = rest.substring(0, 8); // e.g. "09:30:00"
-
-    // Calculate naive weekday from the literal date string (assuming YYYY-MM-DD)
-    const naiveDate = new Date(`${datePart}T00:00:00Z`);
-    const weekday = naiveDate.getUTCDay();
-
-    // Calculate total duration
-    const totalDurationMin = serviceReqs.durationMin + serviceReqs.bufferBeforeMin + serviceReqs.bufferAfterMin;
-
-    // Calculate naive end time string using a 1970 UTC epoch base to prevent timezone shifts
-    const naiveStartEpoch = new Date(`1970-01-01T${startTimeString}Z`);
-    const naiveEndEpoch = new Date(naiveStartEpoch.getTime() + totalDurationMin * 60000);
-    const endTimeString = naiveEndEpoch.toISOString().substring(11, 19); // e.g. "10:15:00"
-
-    // Calculate total blocked time including buffers (UTC for DB storage)
-    const blockedStart = new Date(requestedStart.getTime() - serviceReqs.bufferBeforeMin * 60000);
-    const blockedEnd = new Date(requestedStart.getTime() + (serviceReqs.durationMin + serviceReqs.bufferAfterMin) * 60000);
-
-    const appointmentId = await this.appointmentRepo.createBooking({
+    return this.appointmentRepo.createBooking({
       tenantId,
       doctorId,
       patientId,
       roomId: finalRoomId,
       serviceId,
-      startsAt: blockedStart,
-      endsAt: blockedEnd,
+      startsAt: times.blockedStart,
+      endsAt: times.blockedEnd,
       deviceIds: serviceReqs.requiredDeviceIds,
-      requestedWeekday: weekday,
-      requestedLocalStartTime: startTimeString,
-      requestedLocalEndTime: endTimeString
+      requestedWeekday: times.weekday,
+      requestedLocalStartTime: times.localTimePart,
+      requestedLocalEndTime: times.endTimeString,
     });
-
-    return appointmentId;
   }
 
   async cancelBooking(tenantId: number, appointmentId: number) {
